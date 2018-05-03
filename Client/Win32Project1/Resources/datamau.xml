@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sprite-data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+<position>
+	<x>0</x>
+	<y>0</y>
+	<w>16</w>
+	<h>16</h>
+</position>
+
+<position>
+	<x>16</x>
+	<y>0</y>
+	<w>16</w>
+	<h>16</h>
+</position>
+</sprite-data>
