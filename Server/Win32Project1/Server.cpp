@@ -35,7 +35,7 @@ void Server::prepareListenSocket()
 void Server::Bind()
 {
 	InternetAddr.sin_family = AF_INET;
-	InetPton(AF_INET, L"192.168.1.132", &severbuff);
+	InetPton(AF_INET, L"127.0.0.1", &severbuff);
 	InternetAddr.sin_addr = severbuff;
 	//inet_addr("192.168.0.145");// htonl(INADDR_ANY);
 	//InternetAddr.sin_addr.s_addr = inet_addr(szServer);
