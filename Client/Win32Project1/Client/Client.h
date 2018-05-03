@@ -15,7 +15,7 @@ using namespace CPlusPlusLogging;
 #define DEFAULT_MESSAGE "\'A test message from client\'"
 #define FLAG_DATASIZE "DataSize:"
 #define SIZE_FLAG_DATASIZE 9
-#define szServer "192.168.1.132"
+#define szServer "127.0.0.1"
 
 enum ePlayerFlags : uint8_t
 {
