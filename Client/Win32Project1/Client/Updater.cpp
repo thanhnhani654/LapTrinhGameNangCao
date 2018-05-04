@@ -20,9 +20,6 @@ Updater::Updater(GameScene* scene)
 // Chuan doan ban dau cho thay nguyen nhan co the do FPS
 void Updater::analysis()
 {
-	char* tempData = new char(DEFAULT_BUFFER);
-	char* temp = nullptr;
-	memcpy(tempData, client->szBuffer, client->ret);
 	bool startread = false;
 	int readlen = 0;
 
@@ -34,11 +31,6 @@ void Updater::analysis()
 
 	while (true)
 	{
-		/*if (temp != nullptr)
-			delete[] temp;
-		temp = new char[2];*/
-		
-		//memcpy(temp, tempData + readlen, 2);
 		tempflag[0] = client->szBuffer[readlen];
 		tempflag[1] = client->szBuffer[readlen+1];
 		
@@ -70,17 +62,12 @@ void Updater::analysis()
 		if (readlen == 18)
 			int WTF = 0;
 		//Get Object ID
-		/*if (temp != nullptr)
-		delete[] temp;		temp = nullptr;
-		temp = new char[4];*/
-		memcpy(tempObjectId, tempData + readlen, 4);	readlen += 4;
+		memcpy(tempObjectId, client->szBuffer + readlen, 4);	readlen += 4;
 		comUp.objectid = static_cast<eObjectId>((*tempObjectId));
 
 		//Get FuncId
-		/*if (temp != nullptr)
-		delete[] temp;		temp = nullptr;
-		temp = new char[4];*/
-		memcpy(tempfuncID, tempData + readlen, 4);	     readlen += 4;
+
+		memcpy(tempfuncID, client->szBuffer + readlen, 4);	     readlen += 4;
 		comUp.funcid = static_cast<funcId>((*tempfuncID));
 
 		//Get Data
