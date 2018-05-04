@@ -127,3 +127,6 @@ public:
 	BOOL cRecv();
 	//void analysis();
 };
+=======
+	static char* testdata;
+};
