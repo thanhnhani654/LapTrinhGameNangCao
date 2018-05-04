@@ -4,7 +4,7 @@
 #include <d3dx9.h>
 #include "GameScene.h"
 #include "Sprite.h"
-
+#include "Client\Updater.h"
 
 class  Game
 {
@@ -13,6 +13,7 @@ private:
 	LPDIRECT3DDEVICE9 d3ddv;
 	LPDIRECT3DSURFACE9 surface = NULL;
 	LPDIRECT3DSURFACE9 back_buffer = NULL;
+	Updater* updater;
 
 	//Client client;
 

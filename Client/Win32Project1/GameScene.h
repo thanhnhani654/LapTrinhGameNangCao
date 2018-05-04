@@ -25,4 +25,6 @@ public:
 	void Draw();
 
 	void LoadMapFromFile();
+
+	Player* getPlayer();
 };

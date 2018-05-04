@@ -146,3 +146,8 @@ void GameScene::LoadMapFromFile()
 	}
 
 }
+
+Player* GameScene::getPlayer()
+{
+	return player;
+}

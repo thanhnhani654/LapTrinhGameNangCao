@@ -93,6 +93,9 @@
     <ClCompile Include="GameLog\GameLog.cpp">
       <Filter>GameLog</Filter>
     </ClCompile>
+    <ClCompile Include="Client\Updater.cpp">
+      <Filter>Source Files\ClientFol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h">
@@ -148,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="GameLog\GameLog.h">
       <Filter>GameLog</Filter>
+    </ClInclude>
+    <ClInclude Include="Client\Updater.h">
+      <Filter>Header Files\ClientFol</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

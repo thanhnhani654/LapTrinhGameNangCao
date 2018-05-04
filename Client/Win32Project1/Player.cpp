@@ -42,40 +42,21 @@ void Player::Update(float deltatime)
 	if (tank.GetMovement()->getPreviousDirection() != tank.GetMovement()->GetDirection())
 	{
 		edirection temp = tank.GetMovement()->GetDirection();
-		NetWorkManage::CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
+		NetWorkManage::getInstance()->CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
 	}
 
 	static int delay = 60;
 	if (delay < 0)
 	{
-		delay = 60;
+		GAMELOG("X = %f			Y = %f", tank.GetPosition().x, tank.GetPosition().y);
+		delay= 60;
 	}
 	else
 		delay--;
 
-	static float t = 0;
-	t += deltatime;
-	if (t > 1000)
-	{
-		GAMELOG("x: %f			y: %f", tank.GetPosition().x, tank.GetPosition().y);
-		t = 0;
-	}
-
 	tank.Update(deltatime);
-	
-	if (NetWorkManage::testdata == nullptr)
-		return;
 
-	float tempfloat;
-	char* tempdata = new char(sizeof(FLOAT));
 
-	memcpy(tempdata, NetWorkManage::testdata, 4);
-	tempfloat = (FLOAT)(*tempdata);
-	tank.SetPosition(tempfloat, tank.GetPosition().y);
-	
-	memcpy(tempdata, NetWorkManage::testdata + 4, 4);
-	tempfloat = (FLOAT)(*tempdata);
-	tank.SetPosition(tank.GetPosition().x, tempfloat);
 }
 
 void Player::Draw()
@@ -115,3 +96,7 @@ void Player::Move(float deltatime)
 
 }
 
+Tank* Player::getTank()
+{
+	return &tank;
+}

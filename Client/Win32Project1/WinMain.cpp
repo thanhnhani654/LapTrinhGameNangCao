@@ -10,6 +10,7 @@
 #include "Game.h"
 #include "Controller.h"
 #include "GameLog\GameLog.h"
+#include "Client\Updater.h"
 
 #define FRAME_LIMIT 60
 
@@ -20,8 +21,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	WNDCLASS wc;
 	HWND hwnd;
 	MSG msg;
-	NetWorkManage client;
-	client.Initialize();
+	NetWorkManage* client = NetWorkManage::getInstance();
+	client->Initialize();
 
 	//wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -63,15 +64,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 
 	//////////////////////////////////////////////////////////////
 
-	if (!client.cClientStartUp())
+	if (!client->cClientStartUp())
 	{
 		MessageBox(NULL,TEXT("Failed at ClientStartUp!"),TEXT("Error"),NULL);
 	}
-	if (!client.cCreateSocket())
+	if (!client->cCreateSocket())
 	{
 		MessageBox(NULL, TEXT("Failed at CreateSocket!"), TEXT("Error"), NULL);
 	}
-	if (!client.cConnect())
+	if (!client->cConnect())
 	{
 		MessageBox(NULL, TEXT("Failed at Connect!"), TEXT("Error"), NULL);
 	}
@@ -100,37 +101,49 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		current_tick = GetTickCount();
-		deltatime = current_tick - last_tick;
-		last_tick = current_tick;
+		
+		
+		
 
 		static float tt = 0;
 		static int co = 0;
 		co++;
 		tt += deltatime;
+		
 		if (tt > 1000)
 		{
-			GAMELOG("fps: %d", co);
+			//GAMELOG("fps: %d", co);
 			tt = 0;
 			co = 0;
 		}
-
+		
 		//Limit FPS
-		if (current_tick - last_tick < 1000 / FRAME_LIMIT)
+		current_tick = GetTickCount();
+		deltatime = current_tick - last_tick;
+		if (deltatime < 1000.0f / FRAME_LIMIT)
 		{
-			Sleep(1000 / FRAME_LIMIT - (current_tick - last_tick));
-		}
+			Sleep((1000.0f / FRAME_LIMIT) - (deltatime));
+		}		
+		last_tick = current_tick;
 
-		NetWorkManage::getStartUpdatetime();
+
+		NetWorkManage::getInstance()->getStartUpdatetime();
 		game.GameRun(deltatime);
-		int delay = 60;
+		int delay = 15;
 		static int t = delay;
 		if (t < 0)
 		{
 			//if (client.clientMode == eClientMode::Sending && client.sendMode == eSendMode::SendDataSizePack)
-			client.WrapToSend();
-			client.SendData();
-			//client.cRecv();
+			client->WrapToSend();
+			client->SendData();
+			if (client->cRecv())
+			{
+				if (Updater::getInstance() != nullptr)
+				{
+					Updater::getInstance()->analysis();
+					Updater::getInstance()->ChecknUpdate();
+				}
+			}
 			t = delay;
 		}
 		else
@@ -138,7 +151,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	}
 
 	game.GameRelease();
-	//client.cClose();
+	client->cClose();
 
 	return msg.wParam;
 }

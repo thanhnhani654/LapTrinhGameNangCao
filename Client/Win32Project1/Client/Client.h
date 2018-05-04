@@ -15,7 +15,7 @@ using namespace CPlusPlusLogging;
 #define DEFAULT_MESSAGE "\'A test message from client\'"
 #define FLAG_DATASIZE "DataSize:"
 #define SIZE_FLAG_DATASIZE 9
-#define szServer "192.168.1.132"
+#define szServer "127.0.0.1"
 
 enum ePlayerFlags : uint8_t
 {
@@ -70,12 +70,19 @@ enum funcId : uint32_t
 	Pl_Position,
 };
 
+struct CompareUpdate
+{
+	eObjectId objectid;
+	funcId funcid;
+	char* data;
+};
+
 class NetWorkManage
 {
 protected:
 	WSADATA wsd;
 	
-	char szBuffer[DEFAULT_BUFFER];
+	
 	int result;
 	struct sockaddr_in server;
 	struct hostent *host = NULL;
@@ -84,9 +91,12 @@ protected:
 	int iPort = DEFAULT_PORT;
 	BOOL bSendOnly = TRUE;
 	
-	int ret;
+	
 	
 public:
+	char szBuffer[DEFAULT_BUFFER];
+	int ret;
+
 	void Initialize();
 	eSendMode sendMode;
 	eClientMode clientMode;
@@ -94,31 +104,26 @@ public:
 
 	static Timer localTime;
 
-	//static DataInfomation* tempDataSizePack;
-	static DataInfomation* tempDataPack;		//main
-	static DataInfomation* DataSizePack;		//xoa
-	static DataInfomation* DataPack;			//main
-	static DataInfomation* StoreOPS;			//xoa
-	static int count;
+	static NetWorkManage* inst;
+	static NetWorkManage* getInstance();
+
+	DataInfomation* tempDataPack;		//main
+	DataInfomation* DataPack;			//main
 	
 	BOOL cClientStartUp();
 	BOOL cCreateSocket();
 	BOOL cConnect();
 	BOOL cSend();
 	BOOL cClose();
-	
-	int GetPlayerID();
 
-	static BOOL CreateEventData(void* data,eObjectId objectid, funcId FuncID, uint32_t datasize);
-	static BOOL getStartUpdatetime();
+	BOOL CreateEventData(void* data,eObjectId objectid, funcId FuncID, uint32_t datasize);
+	BOOL getStartUpdatetime();
 
-	//OPS:: Once Per Send
-	static BOOL StoreOPSData(void* data, uint32_t FuncID, uint32_t datasize);
 	//Goi data lai va gan cac flag nhan dien
 	BOOL WrapToSend();
 	BOOL SendData();
 
-	////////////////////////TEST
+	////////////////////////update
 	BOOL cRecv();
-	static char* testdata;
+	//void analysis();
 };

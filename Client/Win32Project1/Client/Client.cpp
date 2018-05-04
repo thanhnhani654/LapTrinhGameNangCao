@@ -1,20 +1,21 @@
 #include "Client.h"
+#include "../GameLog/GameLog.h"
 
 SOCKET NetWorkManage::sClient;
-DataInfomation* NetWorkManage::DataSizePack;
-DataInfomation* NetWorkManage::DataPack;
-DataInfomation* NetWorkManage::StoreOPS;
-DataInfomation* NetWorkManage::tempDataPack;
-char* NetWorkManage::testdata;
-int NetWorkManage::count;
 Timer NetWorkManage::localTime;
+NetWorkManage* NetWorkManage::inst;
+
+NetWorkManage* NetWorkManage::getInstance()
+{
+	if (inst == nullptr)
+		inst = new NetWorkManage();
+	return inst;
+}
 
 void NetWorkManage::Initialize()
 {
-	testdata = nullptr;
 	sendMode = SendDataSizePack;
 	clientMode = eClientMode::Sending;
-	DataSizePack = new DataInfomation(1);
 	DataPack = new DataInfomation(1);
 	localTime.getCurrentTime();
 }
@@ -169,36 +170,6 @@ BOOL NetWorkManage::SendData()
 	send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
 	delete DataPack;
 	DataPack = new DataInfomation(2);
-	/*switch (sendMode)
-	{
-	case eSendMode::SendDataSizePack:
-		send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
-
-		break;
-	case eSendMode::SendDataPack:
-		send(sClient, DataPack->Buffer, DataSizePack->len, 0);
-		break;
-	}*/
-	return TRUE;
-}
-
-//Ham nay du. Khong co tac dung. Khong dung nua. Da Xoa
-BOOL NetWorkManage::StoreOPSData(void* data, uint32_t FuncID, uint32_t datasize)
-{
-	if (StoreOPS == NULL)
-	{
-		StoreOPS = new DataInfomation(2);
-	}
-	char* dataconvert = new char(sizeof(uint32_t));
-
-	dataconvert = reinterpret_cast<char*>(FuncID);
-	memcpy(StoreOPS->Buffer, dataconvert, sizeof(uint32_t));
-	StoreOPS->len += sizeof(uint32_t);
-
-	dataconvert = new char(datasize);
-	dataconvert = reinterpret_cast<char*>(data);
-	memcpy(StoreOPS->Buffer + StoreOPS->len, dataconvert, datasize);
-	StoreOPS->len += datasize;
 	return TRUE;
 }
 
@@ -217,21 +188,8 @@ BOOL NetWorkManage::cRecv()
 		printf("recv() failed with error code %d\n", WSAGetLastError());
 		MessageBox(NULL, L"recv() ERRROR", L"ERROR", NULL);
 		return FALSE;
-	}
+	}	
 
-	if (testdata == nullptr)
-	{
-		testdata = new char(sizeof(FLOAT));
-	}
-
-	memcpy(testdata, szBuffer, 8);
-	float tempfloat;
-	char* tempdata = new char(sizeof(FLOAT));
-
-	memcpy(tempdata, NetWorkManage::testdata, 4);
-	tempfloat = (FLOAT)(*tempdata);
-
-	
 
 	return TRUE;
 }
@@ -282,3 +240,4 @@ BOOL NetWorkManage::getStartUpdatetime()
 	//delete[] dataConverter;
 	return TRUE;
 }
+

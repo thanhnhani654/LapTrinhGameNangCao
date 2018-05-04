@@ -10,6 +10,7 @@ bool Game::GameInit(HWND hwnd)
 	//Initialize Game Device
 	d3d = Direct3DCreate9(D3D_SDK_VERSION);
 	D3DPRESENT_PARAMETERS d3dpp;
+	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
 	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -38,7 +39,7 @@ bool Game::GameInit(HWND hwnd)
 	//////////////////////////////////////////////////////////////////////////
 	sprites.GetDevice(d3ddv);
 	gameScene.Init();
-	
+	updater = new Updater(&gameScene);
 
 	return true;
 }

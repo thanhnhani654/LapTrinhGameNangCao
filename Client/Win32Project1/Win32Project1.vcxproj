@@ -152,6 +152,7 @@
     <ClCompile Include="Behavior\Movement.cpp" />
     <ClCompile Include="Client\Client.cpp" />
     <ClCompile Include="Client\Timer.cpp" />
+    <ClCompile Include="Client\Updater.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameLog\GameLog.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="Behavior\Movement.h" />
     <ClInclude Include="Client\Client.h" />
     <ClInclude Include="Client\Timer.h" />
+    <ClInclude Include="Client\Updater.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="Game.h" />

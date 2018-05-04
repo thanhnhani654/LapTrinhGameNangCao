@@ -16,4 +16,5 @@ public:
 	void Draw();
 	void OnKeyDown(int Keycode);
 	void Move(float deltatime);
+	Tank* getTank();
 };
