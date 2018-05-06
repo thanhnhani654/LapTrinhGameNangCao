@@ -8,7 +8,7 @@ void Tank::Initialize()
 	sprites.Initialize();
 	movement = new Movement();
 	movement->Initialize(&position);
-	movement->SetSpeed(1.0f);
+	movement->SetSpeed(90.0f);
 	state = normal;
 	maxBullet = 1;
 }
@@ -19,7 +19,7 @@ void Tank::Initialize(eTankType itype)
 	type = itype;
 	movement = new Movement();
 	movement->Initialize(&position);
-	movement->SetSpeed(1.0f);
+	movement->SetSpeed(90.0f);
 	state = normal;
 	maxBullet = 100;
 }

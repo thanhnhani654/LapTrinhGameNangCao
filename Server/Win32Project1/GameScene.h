@@ -1,6 +1,4 @@
 #pragma once
-//#include "Client\Client.h"
-#include "Server.h"
 #include "GameObject.h"
 #include "GameObject\Tank.h"
 #include "GameObject\Brick.h"

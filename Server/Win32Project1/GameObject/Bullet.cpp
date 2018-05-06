@@ -41,7 +41,7 @@ void Bullet::GetDirection(edirection idirection)
 
 void Bullet::Update(float deltatime)
 {
-	move.Move(direction);
+	move.Move(direction, deltatime);
 }
 
 void Bullet::Draw()

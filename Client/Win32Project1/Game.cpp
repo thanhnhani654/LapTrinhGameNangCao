@@ -52,8 +52,9 @@ bool Game::GameRun(float deltatime)
 	gameScene.UpdateInput();
 
 	//Update all other stat 
+	locker->lock();
 	gameScene.Update(deltatime);
-
+	locker->unlock();
 	if (d3ddv->BeginScene())
 	{
 
@@ -77,4 +78,9 @@ bool Game::GameRelease()
 	if (d3d != NULL)
 		d3d->Release();
 	return true;
+}
+
+void Game::getLocker(std::mutex* locker)
+{
+	this->locker = locker;
 }

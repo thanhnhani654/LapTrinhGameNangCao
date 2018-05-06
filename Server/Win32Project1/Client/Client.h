@@ -32,18 +32,10 @@ struct DataInfomation
 	char Buffer[DEFAULT_BUFFER];
 	int len;
 	int count;
-	DataInfomation(int type)
+	DataInfomation()
 	{
-		switch (type)
-		{
-		case 1:
-			count = 0;
-			len = 5;
-		case 2:
-			count = 0;
-			len = 0;
-		}
-		
+		count = 0;
+		len = 0;
 	}
 };
 

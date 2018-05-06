@@ -10,20 +10,55 @@
 #include <dinput.h>
 #include "Game.h"
 #include "Controller.h"
+#include <thread>
+#include <mutex>
 #pragma comment(lib,"ws2_32")
 
 #define FRAME_LIMIT 60
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow);
+int serverFunc();
+std::mutex locker;
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow)
+{
+	//mainFunc(hInstance, hPrevInstance, lpCmnLine, nCmdShow);
+	
+	std::thread gameThread(mainFunc, hInstance, hPrevInstance, lpCmnLine,  nCmdShow);
+	//serverFunc();
+	std::thread serverThread(serverFunc);
+	
+	if (gameThread.joinable())
+	{
+		gameThread.join();
+	}
+	if (serverThread.joinable())
+	{
+		serverThread.join();
+	}
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow)
 {
 	WNDCLASS wc;
 	HWND hwnd;
 	MSG msg;
 	//NetWorkManage client;
 	//client.Initialize();
-	Server server;
+	Server* server = Server::getInstance();
 
 	//wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -67,22 +102,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 
 	/*if (!client.cClientStartUp())
 	{
-		MessageBox(NULL,TEXT("Failed at ClientStartUp!"),TEXT("Error"),NULL);
+	MessageBox(NULL,TEXT("Failed at ClientStartUp!"),TEXT("Error"),NULL);
 	}
 	if (!client.cCreateSocket())
 	{
-		MessageBox(NULL, TEXT("Failed at CreateSocket!"), TEXT("Error"), NULL);
+	MessageBox(NULL, TEXT("Failed at CreateSocket!"), TEXT("Error"), NULL);
 	}
 	if (!client.cConnect())
 	{
-		MessageBox(NULL, TEXT("Failed at Connect!"), TEXT("Error"), NULL);
+	MessageBox(NULL, TEXT("Failed at Connect!"), TEXT("Error"), NULL);
 	}*/
 
-	server.StartUp();
-	server.prepareListenSocket();
-	server.Bind();
-	server.listenSocket();
-	server.nonBlock();
+	server->StartUp();
+	server->prepareListenSocket();
+	server->Bind();
+	server->listenSocket();
+	server->nonBlock();
 
 	//////////////////////////////////////////////////////////////
 
@@ -101,7 +136,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	int done = 0;
 	float fpscount = 0;
 	int fps = 0;
-
+	server->setUpCompleted = true;
+	game.getLocker(&locker);
 	while (!done)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -116,10 +152,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 		last_tick = current_tick;
 		//debug
 		static int sl = 0;
-		if (deltatime < 1000 / FRAME_LIMIT)
+		if (deltatime < 1000.0f / FRAME_LIMIT)
 		{
 			sl++;
-			Sleep((1000 / FRAME_LIMIT) - (deltatime));
+			Sleep((1000.0f / FRAME_LIMIT) - (deltatime));
 		}
 		fps++;
 		fpscount += deltatime;
@@ -127,7 +163,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 		static int del2 = 0;
 		if (fpscount > 1000.0f)
 		{
-			//GAMELOG("fps: %d\n sleep: %d \n del: %d", fps, sl, deltatime);
+			GAMELOG("fps: %d\n sleep: %d \n del: %d", fps, sl, deltatime);
 			//GAMELOG("dbg %d\n", sizeof(SnapShoot*));
 			fps = 0;
 			fpscount = 0;
@@ -140,10 +176,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 		}
 
 		del = GetTickCount();
+		//locker.lock();
 		game.GameRun(deltatime);
+		//locker.unlock();
 		del2 = GetTickCount() - del;
-
-		server.Recv();
+		locker.lock();
+		Server::getInstance()->autoSend += deltatime;
+		if (Server::getInstance()->autoSend > 500)
+		{
+			Server::getInstance()->SendDataPack();
+			Server::getInstance()->autoSend = 0;
+		}
+		locker.unlock();
+		/*Server::getInstance()->selectSocket();
+		Server::getInstance()->Recv();*/
 	}
 
 	game.GameRelease();
@@ -151,14 +197,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	return msg.wParam;
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+int serverFunc()
 {
-	switch (msg)
+	
+	Server* server = Server::getInstance();
+	float current_tick = GetTickCount();
+	float deltatime = 0;
+	float last_tick = 0;
+	float timeDelay = 0;
+	while (TRUE)
 	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
+		if (!server->setUpCompleted)
+			continue;
+		locker.lock();
+		//GAMELOG("AAA");
+		Server::getInstance()->selectSocket();
+		//GAMELOG("BBB");
+		current_tick = GetTickCount();
+		deltatime = current_tick - last_tick;
+		Server::getInstance()->autoSend += deltatime;
+		
+		if (Server::getInstance()->autoSend > 500)
+		{
+			Server::getInstance()->SendDataPack();
+			Server::getInstance()->autoSend = 0;
+		}
+		last_tick = current_tick;
+		Server::getInstance()->Recv();
+		locker.unlock();
 	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return 1;
 }
-

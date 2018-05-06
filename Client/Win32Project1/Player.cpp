@@ -40,10 +40,9 @@ void Player::Update(float deltatime)
 {
 	Move(deltatime);
 	static int multilsend = 0;
-	//edirection temp = tank.GetMovement()->GetDirection();
-	//NetWorkManage::getInstance()->CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
-	//Gui nhieu lan de dam bao Server nhan duoc. Do loi Server khong nhan duoc event khong biet do Server hay Client
-	if (multilsend > 0)
+	edirection temp = tank.GetMovement()->GetDirection();
+	NetWorkManage::getInstance()->CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
+	/*if (multilsend > 0)
 	{
 		multilsend -= 1;
 		edirection temp = tank.GetMovement()->GetDirection();
@@ -54,12 +53,12 @@ void Player::Update(float deltatime)
 		edirection temp = tank.GetMovement()->GetDirection();
 		NetWorkManage::getInstance()->CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
 		multilsend = 5;
-	}
+	}*/
 
 	static int delay = 60;
 	if (delay < 0)
 	{
-		GAMELOG("X = %f			Y = %f", tank.GetPosition().x, tank.GetPosition().y);
+		//GAMELOG("X = %f			Y = %f", tank.GetPosition().x, tank.GetPosition().y);
 		delay= 60;
 	}
 	else

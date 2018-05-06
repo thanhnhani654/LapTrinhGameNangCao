@@ -11,12 +11,46 @@
 #include "Controller.h"
 #include "GameLog\GameLog.h"
 #include "Client\Updater.h"
+#include <thread>
+#include <mutex>
 
 #define FRAME_LIMIT 60
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow);
+int clientFunc();
+static int stop = 0;
+
+static std::mutex locker;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow)
+{
+	std::thread gameThread(mainFunc, hInstance, hPrevInstance, lpCmnLine, nCmdShow);
+	std::thread clientThread(clientFunc);
+	
+
+	if (gameThread.joinable())
+	{
+		gameThread.join();
+	}
+	if (clientThread.joinable())
+	{
+		clientThread.join();
+	}
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int nCmdShow)
 {
 	WNDCLASS wc;
 	HWND hwnd;
@@ -66,7 +100,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 
 	if (!client->cClientStartUp())
 	{
-		MessageBox(NULL,TEXT("Failed at ClientStartUp!"),TEXT("Error"),NULL);
+		MessageBox(NULL, TEXT("Failed at ClientStartUp!"), TEXT("Error"), NULL);
 	}
 	if (!client->cCreateSocket())
 	{
@@ -76,6 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	{
 		MessageBox(NULL, TEXT("Failed at Connect!"), TEXT("Error"), NULL);
 	}
+	//client->nonBlock();
 
 	//////////////////////////////////////////////////////////////
 
@@ -90,10 +125,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 	Game game;
 	if (!game.GameInit(hwnd))
 		return false;
-
+	client->setUpCompleted = true;
 	int done = 0;
+	float timeDelay = 0;
+	game.getLocker(&locker);
 	while (!done)
 	{
+		//Lau Lau co xuat hien loi o day nhung ko biet loi o dau
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			if (msg.message == WM_QUIT)
@@ -101,68 +139,120 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		
-		
-		
-
+		//locker.lock();
 		static float tt = 0;
 		static int co = 0;
 		co++;
 		tt += deltatime;
-		
+
 		if (tt > 1000)
 		{
-			//GAMELOG("fps: %d", co);
+			GAMELOG("fps: %d", co);
 			tt = 0;
 			co = 0;
 		}
-		
+
 		//Limit FPS
 		current_tick = GetTickCount();
 		deltatime = current_tick - last_tick;
 		if (deltatime < 1000.0f / FRAME_LIMIT)
 		{
 			Sleep((1000.0f / FRAME_LIMIT) - (deltatime));
-		}		
+		}
 		last_tick = current_tick;
 
+		//locker.lock();
 
 		NetWorkManage::getInstance()->getStartUpdatetime();
+		
+
 		game.GameRun(deltatime);
-		int delay = 15;
-		static int t = delay;
-		if (t < 0)
+		//locker.unlock();
+		int delay = 0;
+		/*locker.lock();
+		timeDelay += deltatime;
+		if (timeDelay > 0)
 		{
-			//if (client.clientMode == eClientMode::Sending && client.sendMode == eSendMode::SendDataSizePack)
-			client->WrapToSend();
-			client->SendData();
-			if (client->cRecv())
+			if (client->SendData())
 			{
-				if (Updater::getInstance() != nullptr)
-				{
-					Updater::getInstance()->analysis();
-					Updater::getInstance()->ChecknUpdate();
-				}
+				locker.unlock();
+				continue;
 			}
-			t = delay;
-		}
-		else
-			t--;
+			timeDelay = 0;
+		}*/
+		
+
+		/*if (client->cRecv())
+		{
+			if (Updater::getInstance() != nullptr)
+			{
+				Updater::getInstance()->analysis();
+				Updater::getInstance()->ChecknUpdate();
+			}
+		}*/
+		//locker.unlock();
 	}
 
+
+	stop = 1;
 	game.GameRelease();
 	client->cClose();
 
 	return msg.wParam;
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+int clientFunc()
 {
-	switch (msg)
+	float current_tick = GetTickCount();
+	float deltatime = 0;
+	float last_tick = 0;
+	float timeDelay = 0;
+	float timeDelay2 = 0;
+	locker.lock();
+	NetWorkManage* client = NetWorkManage::getInstance();
+	locker.unlock();
+	while (TRUE)
 	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
+		locker.lock();
+		if (!client->setUpCompleted)
+		{
+			locker.unlock();
+			continue;
+		}
+
+		current_tick = GetTickCount();
+		deltatime = current_tick - last_tick;
+		/*if (deltatime < 1000.0f / FRAME_LIMIT)
+		{
+			Sleep((1000.0f / FRAME_LIMIT) - (deltatime));
+		}*/
+		last_tick = current_tick;
+		timeDelay += deltatime;
+		timeDelay2 += deltatime;
+		if (timeDelay < 10 || !client->SendData())
+		{
+			locker.unlock();
+			timeDelay = 0;
+			continue;			
+		}
+		
+		if (client->cRecv())
+		{
+			if (Updater::getInstance() != nullptr)
+			{		
+				if (timeDelay2 > 300)
+				{
+					Updater::getInstance()->analysis();
+					Updater::getInstance()->ChecknUpdate();
+					timeDelay2 = 0;
+				}
+			}
+		}
+		locker.unlock();
+		if (stop == 1)
+			break;
+		
 	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+
+	return 1;
 }

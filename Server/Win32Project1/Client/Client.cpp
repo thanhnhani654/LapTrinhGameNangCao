@@ -11,8 +11,8 @@ void NetWorkManage::Initialize()
 {
 	sendMode = SendDataSizePack;
 	clientMode = eClientMode::Sending;
-	DataSizePack = new DataInfomation(1);
-	DataPack = new DataInfomation(1);
+	DataSizePack = new DataInfomation();
+	DataPack = new DataInfomation();
 
 }
 
@@ -129,7 +129,7 @@ BOOL NetWorkManage::CreateEventData(void* data,eObjectId objectid, funcId FuncID
 
 	if (tempDataPack == NULL)
 	{
-		tempDataPack = new DataInfomation(1);
+		tempDataPack = new DataInfomation();
 		tempDataPack->len = 5;
 		//tempDataSizePack = new DataInfomation();
 	}
@@ -219,7 +219,7 @@ BOOL NetWorkManage::StoreOPSData(void* data, uint32_t FuncID, uint32_t datasize)
 {
 	if (StoreOPS == NULL)
 	{
-		StoreOPS = new DataInfomation(2);
+		StoreOPS = new DataInfomation();
 	}
 	char* dataconvert = new char(sizeof(uint32_t));
 

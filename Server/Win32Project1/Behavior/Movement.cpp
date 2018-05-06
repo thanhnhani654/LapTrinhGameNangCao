@@ -10,7 +10,7 @@ void Movement::Initialize(D3DXVECTOR2* ipos, Object* tank)
 	this->tank = tank;
 }
 
-void Movement::Move(edirection idirection)
+void Movement::Move(edirection idirection, float deltatime)
 {
 	previousDirection = direction;
 
@@ -72,9 +72,9 @@ void Movement::Move(edirection idirection)
 		velocity.x = 0;
 		velocity.y = 0;
 	}
-
-	this->position->x += velocity.x;
-	this->position->y += velocity.y;
+	float del = deltatime / 1000.0f;
+	this->position->x += velocity.x * del;
+	this->position->y += velocity.y * del;
 }
 
 D3DXVECTOR2 Movement::GetVelocity()

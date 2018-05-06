@@ -28,7 +28,6 @@ void Updater::analysis()
 	char tempflag[2];
 	char tempObjectId[4];
 	char tempfuncID[4];
-
 	while (true)
 	{
 		tempflag[0] = client->szBuffer[readlen];
@@ -110,6 +109,19 @@ void Updater::ChecknUpdate()
 {
 	if (updateFSList.empty())
 		return;
+
+	/*switch (updateFSList.back().objectid)
+	{
+	case eObjectId::GameObject:
+		switch (updateFSList.back().funcid)
+		{
+		case funcId::Pl_Position:
+			D3DXVECTOR2* position = reinterpret_cast<D3DXVECTOR2*>(updateFSList.back().data);
+			scene->getPlayer()->getTank()->SetPosition(position->x, position->y);
+			break;
+		}
+		break;
+	}*/
 
 	for (std::vector<CompareUpdate>::iterator it = updateFSList.begin(); it != updateFSList.end(); it++)
 	{

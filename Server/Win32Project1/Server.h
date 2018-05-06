@@ -8,32 +8,27 @@
 //#include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "Client\Client.h"
+#include "Player.h"
+#include <mutex>
 //#include <windows.h>
 //#include <stdio.h>
-
-//#include "Player.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_DEPRECATE
 
 #define PORT 5150
-#define szServer "192.168.1.117"
+#define szServer "192.168.1.234"
 #define DATA_BUFSIZE 8192
 
 typedef struct __SOCKET_INFORMATION {
 
 	CHAR Buffer[DATA_BUFSIZE];
-
 	WSABUF DataBuf;
-
 	SOCKET Socket;
-
 	OVERLAPPED Overlapped;
-
 	DWORD BytesSEND;
-
 	DWORD BytesRECV;
-
+	BOOL bRecv;
 } _SOCKET_INFORMATION, *_LPSOCKET_INFORMATION;
 
 struct UpdateEvent
@@ -54,6 +49,7 @@ struct UpdatePack
 	//	delete _updateEvent;
 	//}
 };
+
 
 class Server
 {
@@ -81,25 +77,36 @@ public:
 	int request;
 	bool doRequest = false;
 	bool sendTime = false;
-	static UpdatePack updatePack[2400];
-	static int updatePackCount;
+	UpdatePack updatePack[2400];
+	int updatePackCount;
+	int autoSend;
 
+	static Server* inst;
+	static Server* getInstance();
+
+	Server();
 	void StartUp();
 	void prepareListenSocket();
 	void Bind();
 	void listenSocket();
 	void nonBlock();
-	void processSend();
+	BOOL selectSocket();
 	void Recv();
+	bool setUpCompleted;
 
+	//Receive From Client
 	UpdateEvent createEvent(eObjectId iObjectId, funcId ifuncId, char* eventdata);
 	UpdatePack createUpdatePack();
 	void addUpdatePack(UpdatePack iupdatePack);
-	static void clearUpdatePack();
+	void clearUpdatePack();
 
 	void analysis(_LPSOCKET_INFORMATION socketInfo);
-
-	static char* dataPack;		//length = sizeof(8);
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	//Send To Client
+	DataInfomation* dataPack;
+	BOOL CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize);
+	void processSend();
+	BOOL SendDataPack();
 };
 
 #endif

@@ -70,8 +70,9 @@ void Movement::Move(edirection idirection, float deltatime)
 		velocity.x = 0;
 		velocity.y = 0;
 	}
-	position->x += velocity.x;// *(deltatime / (1000.0f / 60));
-	position->y += velocity.y;// *(deltatime / (1000.0f / 60));
+	float del = deltatime / 1000.0f;
+	position->x += velocity.x * del;// *(deltatime / (1000.0f / 60));
+	position->y += velocity.y * del;// *(deltatime / (1000.0f / 60));
 }
 
 D3DXVECTOR2 Movement::GetVelocity()

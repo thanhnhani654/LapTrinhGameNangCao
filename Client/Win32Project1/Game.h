@@ -5,6 +5,7 @@
 #include "GameScene.h"
 #include "Sprite.h"
 #include "Client\Updater.h"
+#include <mutex>
 
 class  Game
 {
@@ -25,6 +26,9 @@ public:
 	bool GameRelease();
 
 	static Sprite sprites;
+	std::mutex* locker;
+
+	void getLocker(std::mutex* locker);
 
 };
 

@@ -34,7 +34,7 @@ protected:
 public:
 	void Initialize(D3DXVECTOR2* ipos, Object* tank);
 
-	void Move(edirection idirection);
+	void Move(edirection idirection, float deltatime);
 
 	D3DXVECTOR2 GetVelocity();
 

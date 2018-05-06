@@ -44,21 +44,21 @@ void Player::UpdateInput()
 void Player::Update(float deltatime)
 {
 	tank.GetMovement().setPosition(tank.GetPosition());
-	tank.GetMovement().Move(moveEvent);
+	tank.GetMovement().Move(moveEvent, deltatime);
 	tank.SetPosition(tank.GetMovement().getPosition().x, tank.GetMovement().getPosition().y);
 
 	tank.Update(deltatime);
 
 
 
-	//static float t = 0;
-	//if (deltatime > 0)
-	//	t += deltatime;
-	//if (t > 1000)
-	//{
-	//	GAMELOG("x: %f			y: %f", tank.GetPosition().x, tank.GetPosition().y);
-	//	t = 0;
-	//}
+	static int delay = 60;
+	if (delay < 0)
+	{
+		//GAMELOG("X = %f			Y = %f", tank.GetPosition().x, tank.GetPosition().y);
+		delay = 60;
+	}
+	else
+		delay--;
 }
 
 void Player::Draw()
@@ -66,32 +66,32 @@ void Player::Draw()
 	tank.Draw();
 }
 
-void Player::Move()
+void Player::Move(float deltatime)
 {
 	edirection moveEvent = NIL;
 	if (IsKeyDown(DIK_W))
 	{
-		tank.GetMovement().Move(UP);
+		tank.GetMovement().Move(UP, deltatime);
 		moveEvent = UP;
 	}
 	else if (IsKeyDown(DIK_S))
 	{
-		tank.GetMovement().Move(DOWN);
+		tank.GetMovement().Move(DOWN, deltatime);
 		moveEvent = DOWN;
 	}
 	else if (IsKeyDown(DIK_A))
 	{
-		tank.GetMovement().Move(LEFT);
+		tank.GetMovement().Move(LEFT, deltatime);
 		moveEvent = LEFT;
 	}
 	else if (IsKeyDown(DIK_D))
 	{
-		tank.GetMovement().Move(RIGHT);
+		tank.GetMovement().Move(RIGHT, deltatime);
 		moveEvent = RIGHT;
 	}
 	else
 	{
-		tank.GetMovement().Move(NIL);
+		tank.GetMovement().Move(NIL, deltatime);
 	}
 
 	//NetWorkManage::CreateEventData(&moveEvent,eObjectId::GameObject, Pl_Move_Event, sizeof(moveEvent));
@@ -111,8 +111,12 @@ Player* Player::getInstance()
 	return inst;
 }
 
-
 Tank Player::getTank()
 {
 	return tank;
+}
+
+edirection Player::getDirection()
+{
+	return moveEvent;
 }

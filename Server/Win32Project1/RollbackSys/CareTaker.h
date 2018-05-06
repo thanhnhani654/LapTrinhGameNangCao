@@ -6,12 +6,22 @@
 #include <vector>
 #include "../GameScene.h"
 #include "../GameLog/GameLog.h"
+#include "../GameObject.h"
+#include "../Behavior/Movement.h"
+#include <exception>
+
+struct SnapShootServer
+{
+	//Player: position, direction
+	D3DXVECTOR2 position;
+};
 
 
 class CareTaker
 {
 private:
 	 std::vector<Memento*> mementoList;
+	 SnapShootServer* snapShootServer;
 public:
 	CareTaker();
 	~CareTaker();
@@ -21,4 +31,5 @@ public:
 
 	GameScene reUpdate();
 	int findPastUpdate(float uPackTime);
+	void autoSend(float deltatime);
 };

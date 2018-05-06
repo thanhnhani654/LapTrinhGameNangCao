@@ -5,6 +5,11 @@ SOCKET NetWorkManage::sClient;
 Timer NetWorkManage::localTime;
 NetWorkManage* NetWorkManage::inst;
 
+NetWorkManage::NetWorkManage()
+{
+	setUpCompleted = false;
+}
+
 NetWorkManage* NetWorkManage::getInstance()
 {
 	if (inst == nullptr)
@@ -69,6 +74,19 @@ BOOL NetWorkManage::cCreateSocket()
 		CopyMemory(&server.sin_addr, host->h_addr_list[0], host->h_length);
 		return TRUE;
 	}
+}
+
+void NetWorkManage::nonBlock()
+{
+	nonBlocking = 1;
+	if (ioctlsocket(sClient, FIONBIO, &nonBlocking) == SOCKET_ERROR)
+	{
+		printf("ioctlsocket() failed with error %d\n", WSAGetLastError());
+		MessageBox(NULL, L"NonBlock failed!", L"ERROR", NULL);
+		return;
+	}
+	else
+		printf("ioctlsocket() is OK!\n");
 }
 
 BOOL NetWorkManage::cConnect()
@@ -144,6 +162,8 @@ BOOL NetWorkManage::CreateEventData(void* data,eObjectId objectid, funcId FuncID
 
 	dataconvert = new char(datasize);
 	dataconvert = reinterpret_cast<char*>(data);
+	if (dataconvert[0] != '\x4')
+		int a = 0;
 	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
 	tempDataPack->len += datasize;
 	/*count++;
@@ -165,28 +185,48 @@ BOOL NetWorkManage::WrapToSend()
 
 BOOL NetWorkManage::SendData()
 {
-	if (DataPack->Buffer == NULL)
+	if (DataPack->Buffer == nullptr)
 		return FALSE;
-	send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
+	if (DataPack->Buffer[0] != 's' || DataPack->Buffer[1] != 'p')
+		return FALSE;
+	int ret = send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
+
+	if (ret == SOCKET_ERROR)
+	{
+		GAMELOG("Send Error!");
+		return FALSE;
+	}
+	else if (ret == 0)
+	{
+		GAMELOG("Send NULL!");
+		return FALSE;
+	}
+	GAMELOG("Send Data: %s", DataPack->Buffer);
 	delete DataPack;
-	DataPack = new DataInfomation(2);
+	DataPack = nullptr;
 	return TRUE;
 }
 
 BOOL NetWorkManage::cRecv()
 {
+	if (sClient == SOCKET_ERROR) {
+		GAMELOG("Yup");
+	}
+	GAMELOG("before");
 	ret = recv(sClient, szBuffer, 8192, 0);
-	
+	GAMELOG("after");
 	if (ret == 0)        // Graceful close
 	{
 		printf("It is a graceful close!\n");
-		MessageBox(NULL, L"recv() 0", L"ERROR", NULL);
+		//MessageBox(NULL, L"recv() 0", L"ERROR", NULL);
+		GAMELOG("recv() 0");
 		return FALSE;
 	}
 	else if (ret == SOCKET_ERROR)
 	{
 		printf("recv() failed with error code %d\n", WSAGetLastError());
-		MessageBox(NULL, L"recv() ERRROR", L"ERROR", NULL);
+		//MessageBox(NULL, L"recv() ERRROR", L"ERROR", NULL);
+		GAMELOG("recv() failed with error code %d\n", WSAGetLastError());
 		return FALSE;
 	}	
 
@@ -202,6 +242,10 @@ BOOL NetWorkManage::getStartUpdatetime()
 	{
 		tempDataPack = new DataInfomation(2);
 	}
+	if (DataPack == NULL)
+	{
+		DataPack = new DataInfomation(2);
+	}
 
 	char* flag = new char(2);
 
@@ -213,6 +257,11 @@ BOOL NetWorkManage::getStartUpdatetime()
 		memcpy(tempDataPack->Buffer + tempDataPack->len, flag, 2);
 		tempDataPack->len += 2;
 		
+		if (DataPack != nullptr)
+			DataPack = new DataInfomation(2);
+		if (DataPack->len > 6000)
+				return FALSE;
+
 		memcpy(DataPack->Buffer + DataPack->len, tempDataPack->Buffer, tempDataPack->len);
 		DataPack->len += tempDataPack->len;
 		delete[] tempDataPack;

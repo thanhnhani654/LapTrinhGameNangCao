@@ -9,7 +9,7 @@ void Tank::Initialize()
 	//movement = new Movement();
 	
 	movement.Initialize(&position, this);
-	movement.SetSpeed(1.0f);
+	movement.SetSpeed(90.0f);
 	state = normal;
 	maxBullet = 1;
 	test = 0;
@@ -21,7 +21,7 @@ void Tank::Initialize(eTankType itype)
 	type = itype;
 	//movement = new Movement();
 	movement.Initialize(&position, this);
-	movement.SetSpeed(1.0f);
+	movement.SetSpeed(90.0f);
 	state = normal;
 	maxBullet = 100;
 	test = 0;

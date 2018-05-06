@@ -7,7 +7,7 @@
 #include "Sprite.h"
 #include "RollbackSys\CareTaker.h"
 #include "Client\Timer.h"
-
+#include <mutex>
 
 class  Game
 {
@@ -20,6 +20,7 @@ private:
 	Originator orig;
 	CareTaker caretaker;
 	Timer time;
+	std::mutex* locker;
 
 public:
 	GameScene gameScene;
@@ -29,6 +30,7 @@ public:
 	bool GameRelease();
 
 	static Sprite sprites;
+	void getLocker(std::mutex *locker);
 
 };
 
