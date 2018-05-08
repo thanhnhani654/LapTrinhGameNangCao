@@ -139,6 +139,10 @@ int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int 
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+
+		if (!client->bsyncTimed)
+			continue;
+
 		//locker.lock();
 		static float tt = 0;
 		static int co = 0;
@@ -147,7 +151,7 @@ int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int 
 
 		if (tt > 1000)
 		{
-			GAMELOG("fps: %d", co);
+			//GAMELOG("fps: %d", co);
 			tt = 0;
 			co = 0;
 		}
@@ -161,36 +165,11 @@ int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int 
 		}
 		last_tick = current_tick;
 
-		//locker.lock();
-
+		locker.lock();
 		NetWorkManage::getInstance()->getStartUpdatetime();
-		
+		locker.unlock();
 
 		game.GameRun(deltatime);
-		//locker.unlock();
-		int delay = 0;
-		/*locker.lock();
-		timeDelay += deltatime;
-		if (timeDelay > 0)
-		{
-			if (client->SendData())
-			{
-				locker.unlock();
-				continue;
-			}
-			timeDelay = 0;
-		}*/
-		
-
-		/*if (client->cRecv())
-		{
-			if (Updater::getInstance() != nullptr)
-			{
-				Updater::getInstance()->analysis();
-				Updater::getInstance()->ChecknUpdate();
-			}
-		}*/
-		//locker.unlock();
 	}
 
 
@@ -208,17 +187,16 @@ int clientFunc()
 	float last_tick = 0;
 	float timeDelay = 0;
 	float timeDelay2 = 0;
-	locker.lock();
 	NetWorkManage* client = NetWorkManage::getInstance();
-	locker.unlock();
+
 	while (TRUE)
 	{
-		locker.lock();
 		if (!client->setUpCompleted)
 		{
-			locker.unlock();
 			continue;
 		}
+		if (!client->bsyncTimed)
+			client->SyncTime();
 
 		current_tick = GetTickCount();
 		deltatime = current_tick - last_tick;
@@ -229,26 +207,40 @@ int clientFunc()
 		last_tick = current_tick;
 		timeDelay += deltatime;
 		timeDelay2 += deltatime;
-		if (timeDelay < 10 || !client->SendData())
+		locker.lock();
+		if (timeDelay > 30)
+		{
+			if (!client->SendData())
+			{
+				locker.unlock();
+				timeDelay = 0;
+				continue;
+			}
+			timeDelay = 0;
+		}
+		else
 		{
 			locker.unlock();
-			timeDelay = 0;
-			continue;			
+			continue;
 		}
+
+		locker.unlock();
 		
 		if (client->cRecv())
 		{
+			locker.lock();
 			if (Updater::getInstance() != nullptr)
 			{		
-				if (timeDelay2 > 300)
+				if (timeDelay2 > 1000)
 				{
 					Updater::getInstance()->analysis();
 					Updater::getInstance()->ChecknUpdate();
 					timeDelay2 = 0;
 				}
 			}
+			locker.unlock();
 		}
-		locker.unlock();
+		
 		if (stop == 1)
 			break;
 		

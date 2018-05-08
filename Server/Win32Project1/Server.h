@@ -10,6 +10,7 @@
 #include "Client\Client.h"
 #include "Player.h"
 #include <mutex>
+#include "Client\Timer.h"
 //#include <windows.h>
 //#include <stdio.h>
 
@@ -93,6 +94,10 @@ public:
 	BOOL selectSocket();
 	void Recv();
 	bool setUpCompleted;
+	bool bSyncTime;
+
+	//SyncTime
+	void SyncTime();
 
 	//Receive From Client
 	UpdateEvent createEvent(eObjectId iObjectId, funcId ifuncId, char* eventdata);
@@ -104,7 +109,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//Send To Client
 	DataInfomation* dataPack;
-	BOOL CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize);
+	BOOL CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize, int a);
 	void processSend();
 	BOOL SendDataPack();
 };

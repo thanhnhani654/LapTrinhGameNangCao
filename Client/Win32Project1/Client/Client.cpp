@@ -8,6 +8,8 @@ NetWorkManage* NetWorkManage::inst;
 NetWorkManage::NetWorkManage()
 {
 	setUpCompleted = false;
+	bsyncTimed = false;
+	deltaclock = 0;
 }
 
 NetWorkManage* NetWorkManage::getInstance()
@@ -162,10 +164,10 @@ BOOL NetWorkManage::CreateEventData(void* data,eObjectId objectid, funcId FuncID
 
 	dataconvert = new char(datasize);
 	dataconvert = reinterpret_cast<char*>(data);
-	if (dataconvert[0] != '\x4')
-		int a = 0;
+
 	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
 	tempDataPack->len += datasize;
+	tempDataPack->count++;
 	/*count++;
 	if (count > 90)
 	{
@@ -185,7 +187,7 @@ BOOL NetWorkManage::WrapToSend()
 
 BOOL NetWorkManage::SendData()
 {
-	if (DataPack->Buffer == nullptr)
+	if (DataPack->Buffer == nullptr || DataPack->len == 0)
 		return FALSE;
 	if (DataPack->Buffer[0] != 's' || DataPack->Buffer[1] != 'p')
 		return FALSE;
@@ -201,7 +203,9 @@ BOOL NetWorkManage::SendData()
 		GAMELOG("Send NULL!");
 		return FALSE;
 	}
-	GAMELOG("Send Data: %s", DataPack->Buffer);
+	static int count = 0;
+	count++;
+	GAMELOG("SEND SUCCESSFUL!!!   times: %d", count);
 	delete DataPack;
 	DataPack = nullptr;
 	return TRUE;
@@ -209,12 +213,9 @@ BOOL NetWorkManage::SendData()
 
 BOOL NetWorkManage::cRecv()
 {
-	if (sClient == SOCKET_ERROR) {
-		GAMELOG("Yup");
-	}
-	GAMELOG("before");
 	ret = recv(sClient, szBuffer, 8192, 0);
-	GAMELOG("after");
+	if (szBuffer[0] == 't')
+		return FALSE;
 	if (ret == 0)        // Graceful close
 	{
 		printf("It is a graceful close!\n");
@@ -229,8 +230,9 @@ BOOL NetWorkManage::cRecv()
 		GAMELOG("recv() failed with error code %d\n", WSAGetLastError());
 		return FALSE;
 	}	
-
-
+	static int count = 0; 
+	count++;
+	GAMELOG("RECV SUCCESSFUL!!!			times: %d", count);
 	return TRUE;
 }
 
@@ -238,11 +240,19 @@ BOOL NetWorkManage::getStartUpdatetime()
 {
 	localTime.getCurrentTime();
 
-	if (tempDataPack == NULL)
+	if (tempDataPack == nullptr)
 	{
 		tempDataPack = new DataInfomation(2);
 	}
-	if (DataPack == NULL)
+
+	//Neu khong co su kien can update thi khong can gui
+	if (tempDataPack->count == 0)
+	{
+		delete[] tempDataPack;
+		tempDataPack = new DataInfomation(2);
+	}
+
+	if (DataPack == nullptr)
 	{
 		DataPack = new DataInfomation(2);
 	}
@@ -253,14 +263,11 @@ BOOL NetWorkManage::getStartUpdatetime()
 	if (tempDataPack->len != 0)
 	{
 		flag = "ep";		//End Pack
-		int a = tempDataPack->len;
 		memcpy(tempDataPack->Buffer + tempDataPack->len, flag, 2);
 		tempDataPack->len += 2;
-		
-		if (DataPack != nullptr)
-			DataPack = new DataInfomation(2);
+
 		if (DataPack->len > 6000)
-				return FALSE;
+			GAMELOG("OVERFLOW");
 
 		memcpy(DataPack->Buffer + DataPack->len, tempDataPack->Buffer, tempDataPack->len);
 		DataPack->len += tempDataPack->len;
@@ -275,18 +282,36 @@ BOOL NetWorkManage::getStartUpdatetime()
 
 	//set Time Update
 	char* dataConverter = new char[sizeof(float)];
-	float militime = localTime.getmilitime();
+	float militime = localTime.getmilitime() + deltaclock;
 	dataConverter = reinterpret_cast<char*>(&militime);
 
 	memcpy(tempDataPack->Buffer + tempDataPack->len, dataConverter, sizeof(float));
 	tempDataPack->len += sizeof(float);
-	
-	static int coun = 0;
-	if (coun == 60)
-		int h = 0;
-	coun++;
 
-	//delete[] dataConverter;
 	return TRUE;
 }
 
+void NetWorkManage::SyncTime()
+{
+	localTime.getCurrentTime();
+	float TimeA = localTime.getmilitime() + deltaclock;
+	char tsync[] = "st";
+
+	send(sClient, tsync, 2, 0);
+
+	recv(sClient, szBuffer, DEFAULT_BUFFER, 0);
+
+	if (szBuffer[0] == 's' && szBuffer[1] == 't')
+	{
+		localTime.getCurrentTime();
+		float TimeC = localTime.getmilitime() + deltaclock;
+		
+		char* cTimeB = new char[4];
+		memcpy(cTimeB, szBuffer + 2, 4);
+		float* TimeB = reinterpret_cast<float*>(cTimeB);
+
+		deltaclock = ((TimeC - TimeA) / 2 + *TimeB) - TimeC;
+		deltaclock = 0;
+		bsyncTimed = true;
+	}
+}

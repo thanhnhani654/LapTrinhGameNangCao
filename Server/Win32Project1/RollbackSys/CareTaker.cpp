@@ -31,6 +31,7 @@ GameScene CareTaker::reUpdate()
 	if (lastestUpdate == -1)
 	{
 		//Server::getInstance()->SendDataPack();
+		//Server::getInstance()->CreateData(mementoList.back()->getSnapShoot()->scene.getPlayer()->getTank().GetPosition(), eObjectId::GameObject, funcId::Pl_Position, sizeof(D3DXVECTOR2), 0);
 		return  mementoList.back()->getSnapShoot()->scene;
 	}
 
@@ -56,6 +57,8 @@ GameScene CareTaker::reUpdate()
 						{
 							edirection* moveEvent = reinterpret_cast<edirection*>(Server::getInstance()->updatePack[count]._updateEvent->_event);
 
+							if (*moveEvent == edirection::UP)
+								int a = 0;
 							mementoList.at(i)->getSnapShoot()->scene.getPlayer()->Move(*moveEvent);	
 						}
 				}
@@ -81,11 +84,10 @@ GameScene CareTaker::reUpdate()
 	snapShootServer->position = mementoList.back()->getSnapShoot()->scene.getPlayer()->getTank().GetPosition();
 
 	//Viet 1 ham dong goi rieng.
-	Server::getInstance()->CreateData(snapShootServer->position, eObjectId::GameObject, funcId::Pl_Position, sizeof(D3DXVECTOR2));	
+	Server::getInstance()->CreateData(snapShootServer->position, eObjectId::GameObject, funcId::Pl_Position, sizeof(D3DXVECTOR2), 0);	
 	//Server::getInstance()->autoSend = 0;
-	if (Server::getInstance()->SendDataPack()) {
-		GAMELOG("Caretaker finish calling SendDataPack()!!!!");
-	}
+	Server::getInstance()->SendDataPack();
+
 	return mementoList.back()->getSnapShoot()->scene;
 }
 
@@ -99,6 +101,8 @@ int CareTaker::findPastUpdate(float uPackTime)
 	if (mementoList.end() - mementoList.begin() < 1)
 		return -1;
 	if (listSize - 1 == 0)
+		return 0;
+	if (uPackTime <= mementoList.front()->getSnapShoot()->militime)
 		return 0;
 	for (int i = 0; i < listSize - 1; i++)
 	{		

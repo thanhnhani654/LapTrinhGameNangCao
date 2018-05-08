@@ -41,6 +41,9 @@ void Player::Update(float deltatime)
 	Move(deltatime);
 	static int multilsend = 0;
 	edirection temp = tank.GetMovement()->GetDirection();
+	edirection temp2 = tank.GetMovement()->getPreviousDirection();
+
+	if (temp != temp2)
 	NetWorkManage::getInstance()->CreateEventData(&temp, eObjectId::GameObject, Pl_Move_Event, sizeof(edirection));
 	/*if (multilsend > 0)
 	{

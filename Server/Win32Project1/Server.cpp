@@ -6,6 +6,7 @@ Server* Server::inst;
 Server::Server()
 {
 	setUpCompleted = false;
+	bSyncTime = false;
 }
 
 Server* Server::getInstance()
@@ -48,8 +49,8 @@ void Server::prepareListenSocket()
 void Server::Bind()
 {
 	InternetAddr.sin_family = AF_INET;
-	//InetPton(AF_INET, L"192.168.1.234", &severbuff);
-	InetPton(AF_INET, L"127.0.0.1", &severbuff);
+	InetPton(AF_INET, L"192.168.1.234", &severbuff);
+	//InetPton(AF_INET, L"127.0.0.1", &severbuff);
 	InternetAddr.sin_addr = severbuff;
 	//inet_addr("192.168.0.145");// htonl(INADDR_ANY);
 	//InternetAddr.sin_addr.s_addr = inet_addr(szServer);
@@ -82,12 +83,12 @@ void Server::nonBlock()
 	NonBlock = 1;
 	if (ioctlsocket(ListenSocket, FIONBIO, &NonBlock) == SOCKET_ERROR)
 	{
-		printf("ioctlsocket() failed with error %d\n", WSAGetLastError());
+		GAMELOG("ioctlsocket() failed with error %d\n", WSAGetLastError());
 		MessageBox(NULL, L"NonBlock failed!", L"ERROR", NULL);
 		return;
 	}
 	else
-		printf("ioctlsocket() is OK!\n");
+		GAMELOG("ioctlsocket() is OK!\n");
 }
 
 BOOL Server::selectSocket()
@@ -108,13 +109,17 @@ BOOL Server::selectSocket()
 		else
 			FD_SET(SocketArray[i]->Socket, &ReadSet);
 	
+	timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0.5;
 	
-	
-	if ((Total = select(0, &ReadSet, &WriteSet, NULL, NULL)) == SOCKET_ERROR)
+	if ((Total = select(0, &ReadSet, &WriteSet, NULL, &timeout)) == SOCKET_ERROR)
 	{
-		printf("select() returned with error %d\n", WSAGetLastError());
+		GAMELOG("select() returned with error %d\n", WSAGetLastError());
 		return 1;
 	}
+	Total++;
+	//Total = 1;
 	//else
 		//GAMELOG("select() is OK!\n");
 	//GAMELOG("select() is OK!\n");
@@ -168,6 +173,8 @@ void Server::Recv()
 	FD_ZERO(&WriteSet);
 	FD_SET(ListenSocket, &ReadSet);*/
 	_LPSOCKET_INFORMATION SocketInfo = NULL;
+
+	
 	
 	for (int i = 0; Total > 0 && i < TotalSockets; i++)
 	{		
@@ -200,11 +207,29 @@ void Server::Recv()
 			}
 			else
 			{
+				static int countt = 0;
+				countt++;
+				GAMELOG("RECV									times: %d", countt);
+
 				SocketInfo->BytesRECV = RecvBytes;
 				if (RecvBytes == 0)
 					int a = 0;
-				if (SocketInfo->Buffer[0] != 's' || SocketInfo->Buffer[1] != 'p')
+				if (SocketInfo->Buffer[0] != 's')
+				{
+					GAMELOG("RECV NULL DATA");
 					continue;
+				}
+				static int count = 0;
+				count++;
+				GAMELOG("RECV SUCCESSFUL!!!						times: %d", count);
+				//Delta Recv
+				static float tick = 0;
+				tick = GetTickCount();
+				static float lastTick = 0;
+				float DELTATIME = tick - lastTick;
+				lastTick = tick;
+				//GAMELOG("Delta RECV: %f", DELTATIME);
+
 				SocketInfo->bRecv = false;
 				analysis(SocketInfo);
 				// If zero bytes are received, this indicates the peer closed the connection.
@@ -352,6 +377,13 @@ void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 	int eventCount = 0;
 	UpdatePack* uPack = nullptr;
 
+	//SyncTime
+	if (socketInfo->Buffer[0] == 's' && socketInfo->Buffer[1] == 't')
+	{
+		SyncTime();
+		return;
+	}
+
 	while (loop)
 	{
 		if (tempData != nullptr)
@@ -474,9 +506,9 @@ void Server::processSend()
 		//if (FD_ISSET(SocketArray[i], &ReadSet))
 		//	continue;
 
-		if (SocketArray[i]->bRecv) {
+		/*if (SocketArray[i]->bRecv) {
 			continue;
-		}
+		}*/
 
 		if (dataPack == nullptr)
 		{
@@ -516,8 +548,10 @@ void Server::processSend()
 			{
 				SocketInfo->BytesSEND += SendBytes;
 				SocketInfo->bRecv = true;
-				GAMELOG("Buffer: %s", SocketInfo->Buffer);
-				GAMELOG("leng: %d\n", SendBytes);
+				
+				static int countt = 0;
+				countt++;
+				GAMELOG("SendDataPack() Successful!!!!			times: %d", countt);
 
 				//if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
 				if (SocketInfo->BytesSEND != 0)
@@ -530,8 +564,18 @@ void Server::processSend()
 	}
 }
 
-BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize)
+BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize, int a)
 {
+	if (dataPack != nullptr)
+	{
+		delete dataPack;
+		dataPack = new DataInfomation();
+
+		dataPack->Buffer[0] = 's';
+		dataPack->Buffer[1] = 'p';
+		dataPack->len = 2;
+	}
+
 	char* dataconvert = new char(datasize);	
 
 	DataInfomation* tempDataPack = new DataInfomation();
@@ -564,9 +608,12 @@ BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t 
 	if (dataPack == nullptr)
 	{
 		dataPack = new DataInfomation();
+		
 		dataPack->Buffer[0] = 's';
 		dataPack->Buffer[1] = 'p';
 		dataPack->len = 2;
+		if (a == 1)
+			dataPack->Buffer[0] = 't';
 	}
 	memcpy(dataPack->Buffer, tempDataPack->Buffer, tempDataPack->len);
 	dataPack->len = tempDataPack->len;
@@ -578,7 +625,59 @@ BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t 
 BOOL Server::SendDataPack()
 {
 	processSend();
+
 	delete dataPack;
 	dataPack = nullptr;
 	return TRUE;
+}
+
+void Server::SyncTime()
+{
+	Timer timeb;
+	timeb.getCurrentTime();
+
+	char* timesync = new char[6];
+	timesync[0] = 's';
+	timesync[1] = 't';
+	char* miltime = new char[4];
+	float militime = timeb.getmilitime();
+	miltime = reinterpret_cast<char*>(&militime);
+
+	memcpy(timesync + 2, miltime, 4);
+
+
+	_LPSOCKET_INFORMATION SocketInfo = NULL;
+	for (int i = 0; Total > 0 && i < TotalSockets; i++)
+	{
+		SocketInfo = SocketArray[i];
+
+		SocketInfo->DataBuf.buf = timesync;
+		SocketInfo->DataBuf.len = 6;
+		for (int j = 0; j < 1; j++)
+		if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
+		{
+			MessageBox(NULL, L"Send failed!", L"ERROR", NULL);
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				GAMELOG("WSASend() failed with error %d\n", WSAGetLastError());
+				FreeSocketInformation(i);
+			}
+			else
+				printf("WSASend() is OK!\n");
+			continue;
+		}
+		else
+		{
+			SocketInfo->BytesSEND = SendBytes;
+			SocketInfo->bRecv = true;
+			static int countt = 0;
+			countt++;
+			
+			GAMELOG("Send Time Sync Successful!!!!			times: %d", countt);
+		}
+	}
+
+	delete[] timesync;
+	//delete[] miltime;
+
 }
