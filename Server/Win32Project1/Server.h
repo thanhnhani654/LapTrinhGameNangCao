@@ -19,7 +19,7 @@
 
 #define PORT 5150
 #define szServer "192.168.1.234"
-#define DATA_BUFSIZE 8192
+#define DATA_BUFSIZE 1024
 
 typedef struct __SOCKET_INFORMATION {
 
@@ -74,7 +74,7 @@ public:
 	DWORD SendBytes;
 	DWORD RecvBytes;
 	in_addr severbuff;
-	int mode = 0;
+	//int mode = 0;
 	int request;
 	bool doRequest = false;
 	bool sendTime = false;
@@ -109,7 +109,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//Send To Client
 	DataInfomation* dataPack;
-	BOOL CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize, int a);
+	BOOL CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize);
 	void processSend();
 	BOOL SendDataPack();
 };

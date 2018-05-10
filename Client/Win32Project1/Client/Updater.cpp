@@ -16,8 +16,6 @@ Updater::Updater(GameScene* scene)
 	inst = this;
 }
 
-//Khi client chay va thay doi su kien lien tuc tao ra su khac biet hoi bi ro giua client va server.
-// Chuan doan ban dau cho thay nguyen nhan co the do FPS
 void Updater::analysis()
 {
 	bool startread = false;
@@ -33,6 +31,7 @@ void Updater::analysis()
 		tempflag[0] = client->szBuffer[readlen];
 		tempflag[1] = client->szBuffer[readlen+1];
 		
+		//Check StartRead
 		if (!startread)
 			if (tempflag[0] == 's' && tempflag[1] == 'p')
 			{
@@ -53,23 +52,22 @@ void Updater::analysis()
 				continue;
 			}
 
-		if (readlen > 100)
+		if (readlen > 600)
 		{
+			GAMELOG("OVERFLOW				Call From:Updater::analysis()");
 			break;
 		}
 
-		if (readlen == 18)
-			int WTF = 0;
 		//Get Object ID
-		memcpy(tempObjectId, client->szBuffer + readlen, 4);	readlen += 4;
+		memcpy(tempObjectId, client->szBuffer + readlen, 1);	readlen += 1;
 		comUp.objectid = static_cast<eObjectId>((*tempObjectId));
 
 		//Get FuncId
-
-		memcpy(tempfuncID, client->szBuffer + readlen, 4);	     readlen += 4;
+		memcpy(tempfuncID, client->szBuffer + readlen, 1);	     readlen += 1;
 		comUp.funcid = static_cast<funcId>((*tempfuncID));
 
 		//Get Data
+		//Can viet 1 ham rieng
 		switch (comUp.objectid)
 		{
 		case eObjectId::GameObject:
@@ -91,40 +89,14 @@ void Updater::analysis()
 	}
 }
 
-//template <typename Type>
-//Type Updater::getData(void* data, eObjectId objectId, funcId funcid)
-//{
-//	switch (objectId)
-//	{
-//	case eObjectId:
-//		switch (funcid)
-//		{
-//		case funcId::Pl_Position:
-//
-//		}
-//	}
-//}
-
 void Updater::ChecknUpdate()
 {
 	if (updateFSList.empty())
 		return;
 
-	/*switch (updateFSList.back().objectid)
-	{
-	case eObjectId::GameObject:
-		switch (updateFSList.back().funcid)
-		{
-		case funcId::Pl_Position:
-			D3DXVECTOR2* position = reinterpret_cast<D3DXVECTOR2*>(updateFSList.back().data);
-			scene->getPlayer()->getTank()->SetPosition(position->x, position->y);
-			break;
-		}
-		break;
-	}*/
-
 	for (std::vector<CompareUpdate>::iterator it = updateFSList.begin(); it != updateFSList.end(); it++)
 	{
+		//Chua viet ham UpdateState rieng
 		switch ((*it).objectid)
 		{
 		case eObjectId::GameObject:

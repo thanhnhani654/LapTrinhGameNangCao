@@ -18,6 +18,8 @@ Server* Server::getInstance()
 	return inst;
 }
 
+#pragma region First establish
+
 void Server::StartUp()
 {
 	updatePackCount = 0;
@@ -49,8 +51,8 @@ void Server::prepareListenSocket()
 void Server::Bind()
 {
 	InternetAddr.sin_family = AF_INET;
-	InetPton(AF_INET, L"192.168.1.234", &severbuff);
-	//InetPton(AF_INET, L"127.0.0.1", &severbuff);
+	//InetPton(AF_INET, L"192.168.1.234", &severbuff);
+	InetPton(AF_INET, L"127.0.0.1", &severbuff);
 	InternetAddr.sin_addr = severbuff;
 	//inet_addr("192.168.0.145");// htonl(INADDR_ANY);
 	//InternetAddr.sin_addr.s_addr = inet_addr(szServer);
@@ -91,8 +93,68 @@ void Server::nonBlock()
 		GAMELOG("ioctlsocket() is OK!\n");
 }
 
+void Server::SyncTime()
+{
+	//Khong biet comment the nao nen ghi do cong thuc SyncTime
+	// TimeA(Client): thoi gian luc Client gui goi tin yeu cau dong bo hoa thoi gian
+	// TimeB(Server): thoi gian luc Server nhan goi tin yeu cau dong bo hoa thoi gian
+	// TimeC(Client): thoi gian luc Client nhan goi tin phan hoi chua thoi gian cua Server luc Server nhan goi tin yeu cau dong bo hoa cua Clien =))
+	// 1/2 Thoi gian tren duong truyen: (TimeC - TimeA)/2
+	// Thoi gian hien tai o Server: ((TimeC - TimeA)/2 + TimeB)
+	// ClockDelta = ((TimeC - TimeA)/2 + TimeB) - TimeC
+	// ClientTime = time.getCurrentTime + ClockDelta
+	Timer timeb;
+	timeb.getCurrentTime();
+
+	char* timesync = new char[6];
+	timesync[0] = 's';
+	timesync[1] = 't';
+
+	char* miltime = new char[4];
+	float militime = timeb.getmilitime();
+	miltime = reinterpret_cast<char*>(&militime);
+
+	memcpy(timesync + 2, miltime, 4);
+
+	_LPSOCKET_INFORMATION SocketInfo = NULL;
+	for (int i = 0; Total > 0 && i < TotalSockets; i++)
+	{
+		SocketInfo = SocketArray[i];
+
+		SocketInfo->DataBuf.buf = timesync;
+		SocketInfo->DataBuf.len = 6;
+		if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
+		{
+			MessageBox(NULL, L"Send failed!", L"ERROR", NULL);
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				GAMELOG("WSASend() failed with error %d\n", WSAGetLastError());
+				FreeSocketInformation(i);
+			}
+			else
+				printf("WSASend() is OK!\n");
+			continue;
+		}
+		else
+		{
+			SocketInfo->BytesSEND = SendBytes;
+			//SocketInfo->bRecv = true;
+			FD_SET(SocketInfo->Socket, &ReadSet);
+			static int countt = 0;
+			countt++;
+			GAMELOG("Send Time Sync Successful!!!!			times: %d		Call From: SyncTime", countt);
+		}
+	}
+
+	delete[] timesync;
+	//delete[] miltime;
+}
+
+#pragma endregion
+
 BOOL Server::selectSocket()
 {
+	///PLSSSSSSSSSSSSSSSSSSSSSSSSS DON'T ASK MEEEEEEEEEEEEEEEEEEEE
 	// Prepare the Read and Write socket sets for network I/O notification
 	FD_ZERO(&ReadSet);
 	FD_ZERO(&WriteSet);
@@ -109,29 +171,16 @@ BOOL Server::selectSocket()
 		else
 			FD_SET(SocketArray[i]->Socket, &ReadSet);
 	
-	timeval timeout;
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0.5;
-	
-	if ((Total = select(0, &ReadSet, &WriteSet, NULL, &timeout)) == SOCKET_ERROR)
+	if ((Total = select(0, &ReadSet, &WriteSet, NULL, NULL)) == SOCKET_ERROR)
 	{
 		GAMELOG("select() returned with error %d\n", WSAGetLastError());
 		return 1;
 	}
-	Total++;
-	//Total = 1;
-	//else
-		//GAMELOG("select() is OK!\n");
-	//GAMELOG("select() is OK!\n");
 
 	// Check for arriving connections on the listening socket.
 	if (FD_ISSET(ListenSocket, &ReadSet))
 	{
 		Total--;
-		static int dmmm = 0;
-		if (dmmm == 1)
-			int a = 0;
-		dmmm++;
 		if ((AcceptSocket = accept(ListenSocket, NULL, NULL)) != INVALID_SOCKET)
 		{
 			// Set the accepted socket to non-blocking mode so the server will
@@ -169,80 +218,73 @@ BOOL Server::selectSocket()
 
 void Server::Recv()
 {
-	/*FD_ZERO(&ReadSet);
-	FD_ZERO(&WriteSet);
-	FD_SET(ListenSocket, &ReadSet);*/
 	_LPSOCKET_INFORMATION SocketInfo = NULL;
-
-	
 	
 	for (int i = 0; Total > 0 && i < TotalSockets; i++)
-	{		
-		if (!SocketArray[i]->bRecv) {
+	{
+		//Chi khi nao 1 Socket da gui moi duoc phep nhan thong tin. Khong biet tai sao phai lam nhu the mac du bo cung duoc, thang code dang tim ly do, thong cam.
+		if (FD_ISSET(SocketArray[i]->Socket, &WriteSet))
 			continue;
-		}
-		/*if (FD_ISSET(SocketArray[i]->Socket, &WriteSet))
-			continue;*/
-		SocketInfo = SocketArray[i];
-		if (!SocketInfo->bRecv)
-			continue;
-		
-		if (SocketInfo != NULL)
-		{
-			//Total--;
-			SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-			SocketInfo->DataBuf.len = DATA_BUFSIZE;
-			Flags = 0;
 
-			if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR)
+		SocketInfo = SocketArray[i];
+
+		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+		SocketInfo->DataBuf.len = DATA_BUFSIZE;
+		Flags = 0;
+
+		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR)
+		{
+			#pragma region Error
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
-				if (WSAGetLastError() != WSAEWOULDBLOCK)
-				{
-					printf("WSARecv() failed with error %d\n", WSAGetLastError());
-					FreeSocketInformation(i);
-				}
-				else
-					printf("WSARecv() is OK!\n");
-				continue;
+				printf("WSARecv() failed with error %d\n", WSAGetLastError());
+				FreeSocketInformation(i);
 			}
 			else
-			{
-				static int countt = 0;
-				countt++;
-				GAMELOG("RECV									times: %d", countt);
-
-				SocketInfo->BytesRECV = RecvBytes;
-				if (RecvBytes == 0)
-					int a = 0;
-				if (SocketInfo->Buffer[0] != 's')
-				{
-					GAMELOG("RECV NULL DATA");
-					continue;
-				}
-				static int count = 0;
-				count++;
-				GAMELOG("RECV SUCCESSFUL!!!						times: %d", count);
-				//Delta Recv
-				static float tick = 0;
-				tick = GetTickCount();
-				static float lastTick = 0;
-				float DELTATIME = tick - lastTick;
-				lastTick = tick;
-				//GAMELOG("Delta RECV: %f", DELTATIME);
-
-				SocketInfo->bRecv = false;
-				analysis(SocketInfo);
-				// If zero bytes are received, this indicates the peer closed the connection.
-
-				/*if (RecvBytes == 0)
-				{
-					FreeSocketInformation(i);
-					continue;
-				}*/
-
-			}
-
+				printf("WSARecv() is OK!\n");
+			continue;
+			#pragma endregion
 		}
+		else
+		{
+			//Debug
+			static int countt = 0;
+			countt++;
+			GAMELOG("RECV									times: %d		Call From: Recv", countt);
+			/////////////////////////
+			SocketInfo->BytesRECV = RecvBytes;
+			if (RecvBytes == 0)
+				int a = 0;
+			if (SocketInfo->Buffer[0] != 's')
+			{
+				//Binh Thuong thi se xay ra neu goi du lieu bi cat lam nhieu manh. Bat thuong se xay ra khi Client gui xai format
+				GAMELOG("RECV NULL OR WRONG DATA				Call From: Recv");
+				continue;
+			}
+			//Debug
+			static int count = 0;
+			count++;
+			GAMELOG("RECV SUCCESSFUL!!!						times: %d		Call From: Recv", count);
+			/////////////////////////
+			//Debug
+			//Delta Recv
+			static float tick = 0;
+			tick = GetTickCount();
+			static float lastTick = 0;
+			float DELTATIME = tick - lastTick;
+			lastTick = tick;
+			//GAMELOG("Delta RECV: %f", DELTATIME);
+			/////////////////////////////////////////
+
+			//New
+			FD_SET(SocketInfo->Socket, &WriteSet);
+
+			analysis(SocketInfo);
+
+			//Chua co FreeSocket
+		}
+
+
 	}
 }
 
@@ -273,7 +315,7 @@ void Server::FreeSocketInformation(DWORD Index)
 	_LPSOCKET_INFORMATION SI = SocketArray[Index];
 	DWORD i;
 	closesocket(SI->Socket);
-	printf("Closing socket number %d\n", SI->Socket);
+	GAMELOG("Closing socket number %d\n", SI->Socket);
 	GlobalFree(SI);
 	// Squash the socket array
 	for (int i = Index; i < TotalSockets; i++)
@@ -285,6 +327,7 @@ void Server::FreeSocketInformation(DWORD Index)
 
 UpdateEvent Server::createEvent(eObjectId iObjectId, funcId ifuncId, char* eventdata)
 {
+	//Dung de tao the nho luu lai sau moi lan phan tich
 	UpdateEvent uevent;
 	uevent._objectId = iObjectId;
 	uevent._funcId = ifuncId;
@@ -296,32 +339,36 @@ UpdateEvent Server::createEvent(eObjectId iObjectId, funcId ifuncId, char* event
 
 UpdatePack Server::createUpdatePack()
 {
+	//No comment;
 	UpdatePack upack;
 	upack.eventCount = 0;
-	//upack._updateEvent = &arr[0];
 
 	return upack;
 }
 
 void Server::addUpdatePack(UpdatePack iupdatePack)
 {
+	//Thoi gian cua ban Update bi sai thi bo qua. ben ReUpdate check lai them lan nua
 	if (iupdatePack.miliTime < 0)
-		return;
-	if (iupdatePack.eventCount > 0)
 	{
-		int a = 0;
+		GAMELOG("ClientUpdate time < 0				Call At: Server::addUpdatePack");
+		return;
 	}
 
+	//Luu va sap xep cac ban ClientUpdate theo thoi gian
 	for (int i = 0; i < updatePackCount + 1; i++)
 	{
+		//Neu chua luu ban ClientUpdate nao thi luu thang vao khoi sap xep
 		if (updatePackCount == 0)
 		{
 			updatePack[0] = iupdatePack;
 			updatePackCount++;
 			return;
 		}
+		//Ban Update cu nhat co the se bi dua len dau
 		if (iupdatePack.miliTime < updatePack[0].miliTime)
 		{
+			//Bo luu tru ClientUpdate toi da 2400 ban
 			if (updatePackCount == 2400)
 				updatePackCount--;
 			for (int j = updatePackCount; j > 1; j--)
@@ -330,8 +377,10 @@ void Server::addUpdatePack(UpdatePack iupdatePack)
 			updatePackCount++;
 			return;
 		}
+		//Ban Update moi nhat co the
 		if (iupdatePack.miliTime > updatePack[updatePackCount-1].miliTime)
 		{
+			//Bo luu tru ClientUpdate toi da 2400 ban
 			if (updatePackCount == 2400)
 			{
 				updatePackCount--;
@@ -342,8 +391,10 @@ void Server::addUpdatePack(UpdatePack iupdatePack)
 			updatePackCount++;
 			return;
 		}
+		//Sap xep binh thuong. chen ban ClientUpdate vao cho can chen
 		if (iupdatePack.miliTime > updatePack[i].miliTime && (iupdatePack.miliTime < updatePack[i+1].miliTime || i+1 == updatePackCount))
 		{
+			//Bo luu tru ClientUpdate toi da 2400 ban
 			if (updatePackCount == 2400)
 				updatePackCount--;
 			for (int j = updatePackCount; j > i; j--)
@@ -359,6 +410,7 @@ void Server::addUpdatePack(UpdatePack iupdatePack)
 
 void Server::clearUpdatePack()
 {
+	//No comment;
 	UpdatePack uclear[2400];
 	for (int i = 0; i < 2400; i++)
 	{
@@ -369,12 +421,16 @@ void Server::clearUpdatePack()
 
 void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 {
+	//Co the  chuyen ve mang. Sau nay se chuyen ve mang thay vi con tro
 	char* tempData = nullptr;
 	int readlen = 0;
 
 	bool loop = true;
+	//Khi nhan duoc flag 'sp' thi se bat dau doc du lieu theo thu tu GameObjectID -> FuncID -> Data
 	bool startread = false;
+
 	int eventCount = 0;
+
 	UpdatePack* uPack = nullptr;
 
 	//SyncTime
@@ -389,7 +445,6 @@ void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 		if (tempData != nullptr)
 			delete[] tempData; 
 		tempData = new char[2];
-		//memcpy(tempData, socketInfo->DataBuf.buf + readlen, 2);
 		memcpy(tempData, socketInfo->Buffer + readlen, 2);
 		
 
@@ -399,9 +454,9 @@ void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 			{
 				startread = true;
 				readlen += 2;
+
 				uPack = new UpdatePack();
 				*uPack = createUpdatePack();
-				
 				char* temp = new char[4];
 
 				memcpy(temp, socketInfo->DataBuf.buf + readlen, sizeof(float));
@@ -433,47 +488,39 @@ void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 				continue;
 			}
 
-		if (readlen > 8000)
+		if (readlen > 600)
 		{
+			GAMELOG("Recv data size > 600");
 			delete uPack;
 			uPack = nullptr;
 			break;
 		}
-
-		
 
 		eObjectId objectID;
 		funcId funcID;
 
 		//Get Object ID
 		delete[] tempData;
-		tempData = new char[4];
-		memcpy(tempData, socketInfo->Buffer + readlen, 4);		
+		tempData = new char[1];
+		memcpy(tempData, socketInfo->Buffer + readlen, 1);		
 		objectID = static_cast<eObjectId>((*tempData));
 		///Debug
 		if (objectID == eObjectId::GameObject)
 		{
 			//GAMELOG("True Object ID. %d", cou);
-			readlen += 4;
+			readlen += 1;
 		}
 		else
 		{
-			//GAMELOG("Wrong Object ID.");
 			continue;
 		}
 
 
 		//Get FuncId
 		delete[] tempData;
-		tempData = new char[4];
-		memcpy(tempData, socketInfo->Buffer + readlen, 4);	     readlen += 4;
+		tempData = new char[1];
+		memcpy(tempData, socketInfo->Buffer + readlen, 1);	     readlen += 1;
 		funcID = static_cast<funcId>((*tempData));
-
-		///Debug
-		/*if (funcID == funcId::Pl_Move_Event)
-			GAMELOG("True FuncID");
-		else
-			GAMELOG("WRONG FUNCID");*/
 
 		//Get Data
 		delete[] tempData;
@@ -481,11 +528,12 @@ void Server::analysis(_LPSOCKET_INFORMATION socketInfo)
 		memcpy(tempData, socketInfo->Buffer + readlen, 1);
 		readlen += 1;
 
-		edirection* moveEvent = reinterpret_cast<edirection*>(tempData);
+		//Debug co nhan dung du lieu hay khong. de day lau lau dung` lai
+		/*edirection* moveEvent = reinterpret_cast<edirection*>(tempData);
 		if (*moveEvent == edirection::UP)
 			int a = 0;
 		if (*moveEvent == edirection::NIL)
-			int a = 0;
+			int a = 0;*/
 
 		//Add Event Update
 		uPack->_updateEvent[eventCount] = createEvent(objectID, funcID, tempData);	
@@ -501,161 +549,28 @@ void Server::processSend()
 {
 	_LPSOCKET_INFORMATION SocketInfo = NULL;
 
-	for (int i = 0; Total > 0 && i < TotalSockets; i++)
+	for (int i = 0; i < TotalSockets; i++)
 	{
-		//if (FD_ISSET(SocketArray[i], &ReadSet))
-		//	continue;
-
-		/*if (SocketArray[i]->bRecv) {
-			continue;
-		}*/
-
+		//Khong co gi de gui thi khoi gui
 		if (dataPack == nullptr)
 		{
-			//SocketArray[i]->bRecv = true;
 			continue;
 		}
+		//Hoan thien goi data truoc khi gui. them flag ket thuc.
 		dataPack->Buffer[dataPack->len] = 'e';
 		dataPack->Buffer[dataPack->len + 1] = 'p';
 		dataPack->len += 2;
 
 		SocketInfo = SocketArray[i];
-		SocketInfo->bRecv = true;
 
-		if (SocketInfo != NULL)
-		{
-			//SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-			SocketInfo->DataBuf.buf = dataPack->Buffer;
-			SocketInfo->DataBuf.len = dataPack->len;
-			if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
-			{
-				
-				MessageBox(NULL, L"Send failed!", L"ERROR", NULL);
-				if (WSAGetLastError() != WSAEWOULDBLOCK)
-				{
-					GAMELOG("WSASend() failed with error %d\n", WSAGetLastError());
-					FreeSocketInformation(i);
-				}
-				else
-					printf("WSASend() is OK!\n");
-				continue;
-			}
-			else if (SendBytes == 0)
-			{
-				int a = 0;
-			}
-			else
-			{
-				SocketInfo->BytesSEND += SendBytes;
-				SocketInfo->bRecv = true;
-				
-				static int countt = 0;
-				countt++;
-				GAMELOG("SendDataPack() Successful!!!!			times: %d", countt);
+		FD_SET(SocketInfo->Socket, &ReadSet);
 
-				//if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
-				if (SocketInfo->BytesSEND != 0)
-				{
-					SocketInfo->BytesSEND = 0;
-					SocketInfo->BytesRECV = 0;
-				}
-			}
-		}
-	}
-}
+		SocketInfo->DataBuf.buf = dataPack->Buffer;
+		SocketInfo->DataBuf.len = dataPack->len;
 
-BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize, int a)
-{
-	if (dataPack != nullptr)
-	{
-		delete dataPack;
-		dataPack = new DataInfomation();
-
-		dataPack->Buffer[0] = 's';
-		dataPack->Buffer[1] = 'p';
-		dataPack->len = 2;
-	}
-
-	char* dataconvert = new char(datasize);	
-
-	DataInfomation* tempDataPack = new DataInfomation();
-	tempDataPack->Buffer[0] = 's';
-	tempDataPack->Buffer[1] = 'p';
-	tempDataPack->len = 2;
-
-	(*dataconvert) = static_cast<char>(objectid);
-	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint32_t));
-	tempDataPack->len += sizeof(uint32_t);
-
-	(*dataconvert) = static_cast<char>(FuncID);
-	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint32_t));
-	tempDataPack->len += sizeof(uint32_t);
-
-	dataconvert = new char(datasize);
-	dataconvert = reinterpret_cast<char*>(data);
-	if (dataconvert != NULL)
-		memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
-	else
-	{
-		D3DXVECTOR2 a;
-		a.x = 0;
-		a.y = 0;
-		dataconvert = reinterpret_cast<char*>(&a);
-		memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
-	}
-	tempDataPack->len += datasize;
-
-	if (dataPack == nullptr)
-	{
-		dataPack = new DataInfomation();
-		
-		dataPack->Buffer[0] = 's';
-		dataPack->Buffer[1] = 'p';
-		dataPack->len = 2;
-		if (a == 1)
-			dataPack->Buffer[0] = 't';
-	}
-	memcpy(dataPack->Buffer, tempDataPack->Buffer, tempDataPack->len);
-	dataPack->len = tempDataPack->len;
-	
-	delete tempDataPack;
-	return TRUE;
-}
-
-BOOL Server::SendDataPack()
-{
-	processSend();
-
-	delete dataPack;
-	dataPack = nullptr;
-	return TRUE;
-}
-
-void Server::SyncTime()
-{
-	Timer timeb;
-	timeb.getCurrentTime();
-
-	char* timesync = new char[6];
-	timesync[0] = 's';
-	timesync[1] = 't';
-	char* miltime = new char[4];
-	float militime = timeb.getmilitime();
-	miltime = reinterpret_cast<char*>(&militime);
-
-	memcpy(timesync + 2, miltime, 4);
-
-
-	_LPSOCKET_INFORMATION SocketInfo = NULL;
-	for (int i = 0; Total > 0 && i < TotalSockets; i++)
-	{
-		SocketInfo = SocketArray[i];
-
-		SocketInfo->DataBuf.buf = timesync;
-		SocketInfo->DataBuf.len = 6;
-		for (int j = 0; j < 1; j++)
 		if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
 		{
+
 			MessageBox(NULL, L"Send failed!", L"ERROR", NULL);
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
@@ -668,16 +583,71 @@ void Server::SyncTime()
 		}
 		else
 		{
-			SocketInfo->BytesSEND = SendBytes;
-			SocketInfo->bRecv = true;
+			SocketInfo->BytesSEND += SendBytes;
+
+			//Debug
 			static int countt = 0;
 			countt++;
-			
-			GAMELOG("Send Time Sync Successful!!!!			times: %d", countt);
+			GAMELOG("SendDataPack() Successful!!!!			times: %d		Call From:: processSend", countt);
+
+			//Khong biet de lam gi nhung cu de day
+			//if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
+			/*if (SocketInfo->BytesSEND != 0)
+			{
+				SocketInfo->BytesSEND = 0;
+				SocketInfo->BytesRECV = 0;
+			}*/
 		}
+
 	}
-
-	delete[] timesync;
-	//delete[] miltime;
-
 }
+
+BOOL Server::CreateData(void* data, eObjectId objectid, funcId FuncID, uint32_t datasize)
+{
+	//TempData to cast
+	char* dataconvert = new char(datasize);	
+
+	DataInfomation* tempDataPack = new DataInfomation();
+	tempDataPack->len = 0;
+
+	//Object ID
+	(*dataconvert) = static_cast<char>(objectid);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint8_t));
+	tempDataPack->len += sizeof(uint8_t);
+
+	//FuncID
+	(*dataconvert) = static_cast<char>(FuncID);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint8_t));
+	tempDataPack->len += sizeof(uint8_t);
+
+	//Data
+	dataconvert = new char(datasize);
+	dataconvert = reinterpret_cast<char*>(data);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
+	tempDataPack->len += datasize;
+
+	if (dataPack == nullptr)
+	{
+		dataPack = new DataInfomation();
+		
+		dataPack->Buffer[0] = 's';
+		dataPack->Buffer[1] = 'p';
+		dataPack->len = 2;
+	}
+	memcpy(dataPack->Buffer + dataPack->len, tempDataPack->Buffer, tempDataPack->len);
+	dataPack->len += tempDataPack->len;
+	
+	delete tempDataPack;
+	return TRUE;
+}
+
+BOOL Server::SendDataPack()
+{
+	processSend();
+
+	//Xoa data truoc khi dong goi moi
+	delete dataPack;
+	dataPack = nullptr;
+	return TRUE;
+}
+

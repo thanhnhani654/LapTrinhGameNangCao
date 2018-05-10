@@ -16,7 +16,7 @@ struct SnapShootServer
 	D3DXVECTOR2 position;
 };
 
-
+//Memento Pattern de biet them chi tiet
 class CareTaker
 {
 private:
@@ -31,5 +31,4 @@ public:
 
 	GameScene reUpdate();
 	int findPastUpdate(float uPackTime);
-	void autoSend(float deltatime);
 };

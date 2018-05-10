@@ -16,6 +16,7 @@ public:
 	void analysis();
 	
 	template <typename Type>
+	//That bai cua tao hoa
 	Type getData(void* data,eObjectId objectId, funcId funcid);
 	void ChecknUpdate();
 };

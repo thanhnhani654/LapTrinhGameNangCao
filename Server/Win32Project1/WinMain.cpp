@@ -151,45 +151,23 @@ int mainFunc(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmnLine, int 
 		deltatime = current_tick - last_tick;
 		last_tick = current_tick;
 		//debug
-		static int sl = 0;
+
 		if (deltatime < 1000.0f / FRAME_LIMIT)
 		{
-			sl++;
 			Sleep((1000.0f / FRAME_LIMIT) - (deltatime));
 		}
 		fps++;
 		fpscount += deltatime;
 		static int del = 0;
-		static int del2 = 0;
 		if (fpscount > 1000.0f)
 		{
-			//GAMELOG("fps: %d\n sleep: %d \n del: %d", fps, sl, deltatime);
-			//GAMELOG("dbg %d\n", sizeof(SnapShoot*));
+			//GAMELOG("fps: %d			deltatime: %d", fps, deltatime);
 			fps = 0;
 			fpscount = 0;
-			sl = 0;
-
-		}
-		if (deltatime > 0)
-		{
-			//GAMELOG("del2 NOOOOOOOOOOO: %f", deltatime);
 		}
 
 		del = GetTickCount();
-		//locker.lock();
 		game.GameRun(deltatime);
-		//locker.unlock();
-		del2 = GetTickCount() - del;
-		//locker.lock();
-		//Server::getInstance()->autoSend += deltatime;
-		//if (Server::getInstance()->autoSend > 500)
-		//{
-		//	Server::getInstance()->SendDataPack();
-		//	Server::getInstance()->autoSend = 0;
-		//}
-		//locker.unlock();
-		/*Server::getInstance()->selectSocket();
-		Server::getInstance()->Recv();*/
 	}
 
 	game.GameRelease();
@@ -216,12 +194,14 @@ int serverFunc()
 		current_tick = GetTickCount();
 		deltatime = current_tick - last_tick;
 
-		Server::getInstance()->autoSend += deltatime;		
+		//AutoUpdate Client State
+		Server::getInstance()->autoSend += deltatime;	
 		if (Server::getInstance()->autoSend > 500)
 		{
 			Server::getInstance()->SendDataPack();
 			Server::getInstance()->autoSend = 0;
 		}
+
 		last_tick = current_tick;
 		Server::getInstance()->Recv();
 		locker.unlock();

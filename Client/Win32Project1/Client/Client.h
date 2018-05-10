@@ -10,13 +10,13 @@
 using namespace CPlusPlusLogging;
 
 #define DEFAULT_PORT 5150
-#define DEFAULT_BUFFER 8192
+#define DEFAULT_BUFFER 1024
 
 #define DEFAULT_MESSAGE "\'A test message from client\'"
 #define FLAG_DATASIZE "DataSize:"
 #define SIZE_FLAG_DATASIZE 9
-#define szServer "192.168.1.234"
-//#define szServer "127.0.0.1"
+//#define szServer "192.168.1.234"
+#define szServer "127.0.0.1"
 
 enum ePlayerFlags : uint8_t
 {
@@ -26,7 +26,7 @@ enum ePlayerFlags : uint8_t
 	player4
 };
 
-enum eObjectId : uint32_t
+enum eObjectId : uint8_t
 {
 	SizePack,
 	GameObject
@@ -64,7 +64,7 @@ enum eClientMode
 	Sending,
 };
 
-enum funcId : uint32_t
+enum funcId : uint8_t
 {
 	Pl_Move_Event,
 	Pl_Fire,
@@ -120,7 +120,6 @@ public:
 	BOOL cCreateSocket();
 	void nonBlock();
 	BOOL cConnect();
-	BOOL cSend();
 	BOOL cClose();
 	
 
@@ -129,7 +128,7 @@ public:
 	BOOL getStartUpdatetime();
 
 	//Goi data lai va gan cac flag nhan dien
-	BOOL WrapToSend();
+	
 	BOOL SendData();
 
 	////////////////////////update

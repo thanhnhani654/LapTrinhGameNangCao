@@ -37,19 +37,14 @@ void Player::OnKeyDown(int Keycode)
 
 void Player::UpdateInput()
 {
-	//_ProcessKeyBoard();
-	//Move();
 }
 
 void Player::Update(float deltatime)
 {
 	tank.GetMovement().setPosition(tank.GetPosition());
 	tank.GetMovement().Move(moveEvent, deltatime);
-	tank.SetPosition(tank.GetMovement().getPosition().x, tank.GetMovement().getPosition().y);
 
 	tank.Update(deltatime);
-
-
 
 	static int delay = 60;
 	if (delay < 0)
@@ -93,8 +88,6 @@ void Player::Move(float deltatime)
 	{
 		tank.GetMovement().Move(NIL, deltatime);
 	}
-
-	//NetWorkManage::CreateEventData(&moveEvent,eObjectId::GameObject, Pl_Move_Event, sizeof(moveEvent));
 
 }
 

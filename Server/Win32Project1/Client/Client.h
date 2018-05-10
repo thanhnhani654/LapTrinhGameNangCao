@@ -21,7 +21,7 @@ enum ePlayerFlags : uint8_t
 	player4
 };
 
-enum eObjectId : uint32_t
+enum eObjectId : uint8_t
 {
 	SizePack,
 	GameObject
@@ -51,7 +51,7 @@ enum eClientMode
 	Sending,
 };
 
-enum funcId : uint32_t
+enum funcId : uint8_t
 {
 	Pl_Move_Event,
 	Pl_Fire,
