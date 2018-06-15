@@ -2,31 +2,107 @@
 
 void GameScene::Init()
 {
-	//LoadMapFromFile();
-	player = new Player();
-	player->Initialize();
+	player1 = new Player();
+	player1->Initialize();
+	player1->getTank()->SetPosition(0, 8);
+
+	player2 = new Player();
+	player2->Initialize();
+	player2->getTank()->SetPosition(12*16, 8);
+
+	player3 = new Player();
+	player3->Initialize();
+	player3->getTank()->SetPosition(0, 8 + 13 * 16);
+
+	player4 = new Player();
+	player4->Initialize();
+	player4->getTank()->SetPosition(12 * 16, 8 + 13 * 16);
+
+	LoadMapFromFile();
+
+	AI1.Initialize(8 * 16, 8 + 5 * 16);
+	AI2.Initialize(4 * 16, 8 + 5 * 16);
+
+	//Map Bounding
+	bound1.Initialize(-100, 0, 100, 500);
+	bound2.Initialize(0, -92, 300, 100);
+	bound3.Initialize(208, 0, 100, 500);
+	bound4.Initialize(0, 232, 300, 100);
 
 	Sprite::LoadSpritePos();
 }
 
-void GameScene::UpdateInput()
+void GameScene::UpdateInput(float deltatime)
 {
-	player->UpdateInput();
+	bStartGame = getPlayer(NetWorkManage::getInstance()->playerID)->StartGame();
+
+	if (!bStartGame)
+		return;
+	if (LoadingScreen::getInstance()->isEndGame())
+		return;
+	if (!player1->disable)
+		player1->UpdateInput(deltatime);
+
+	if (!player2->disable)
+		player2->UpdateInput(deltatime);
+
+	if (!player3->disable)
+		player3->UpdateInput(deltatime);
+
+	if (!player4->disable)
+		player4->UpdateInput(deltatime);
+
+	AI1.UpdateInput(deltatime);
+	AI2.UpdateInput(deltatime);
 }
 
 void GameScene::Update(float deltatime)
 {
-	player->Update(deltatime);
+	if (!bStartGame)
+		return;
+	if (LoadingScreen::getInstance()->isEndGame())
+		return;
+	if (!player1->disable)
+		player1->Update(deltatime);
+
+	if (!player2->disable)
+		player2->Update(deltatime);
+
+	if (!player3->disable)
+		player3->Update(deltatime);
+
+	if (!player4->disable)
+		player4->Update(deltatime);
+
+	AI1.Update(deltatime);
+	AI2.Update(deltatime);
+
+	Box2D::destroyProcess();
+	Object::DestroyProcess();
 }
 
 void GameScene::Draw()
 {
-	player->Draw();
-	//int t = bricks.max_size();
-	//for (vector<Object*>::iterator it = bricks.begin(); it != bricks.end(); ++it)
-	//{
-	//	(*it)->Draw();
-	//}
+	if (!bStartGame)
+		return;
+	if (LoadingScreen::getInstance()->isEndGame())
+		return;
+	if (!player1->disable)
+		player1->Draw();
+	if (!player2->disable)
+		player2->Draw();
+	if (!player3->disable)
+		player3->Draw();
+	if (!player4->disable)
+		player4->Draw();
+
+	AI1.Draw();
+	AI2.Draw();
+
+	for (vector<Object*>::iterator it = bricks.begin(); it != bricks.end(); ++it)
+	{
+		(*it)->Draw();
+	}
 }
 
 void GameScene::LoadMapFromFile()
@@ -56,21 +132,6 @@ void GameScene::LoadMapFromFile()
 
 	map.close();
 
-	//Debug Map
-	/*ofstream map1;
-	map1.open("Resources/maptest.txt");
-
-	for (int y = height - 1; y > 0; y--)
-	{
-		for (int x = 0; x < width; x++)
-		{
-			map1 << maps[y][x];
-		}
-		map1 << '\n';
-	}
-
-	map1.close();*/
-
 	for (int y = height - 1; y >= 0; y--)
 	{
 		for (int x = 0; x < width; x++)
@@ -83,8 +144,9 @@ void GameScene::LoadMapFromFile()
 			{
 				Brick* brick = new Brick();
 				brick->Initialize();
-				brick->SetPosition(x * 16, y * 16);
-				bricks.push_back(brick);
+				brick->SetPosition(x * 16 -1 - 8, y * 16);
+				brick->AddBrick(0, 0);
+				bricks.push_back(brick);	
 
 				while (1)
 				{
@@ -114,7 +176,7 @@ void GameScene::LoadMapFromFile()
 			{
 				Steel* steel = new Steel();
 				steel->Initialize();
-				steel->SetPosition(x * 16, y * 16);
+				steel->SetPosition(x * 16 -1 -8, y * 16);
 				bricks.push_back(steel);
 
 				while (1)
@@ -147,7 +209,29 @@ void GameScene::LoadMapFromFile()
 
 }
 
-Player* GameScene::getPlayer()
+Player* GameScene::getPlayer(int id)
 {
-	return player;
+	switch (id)
+	{
+	case 1:
+		return this->player1;
+	case 2:
+		return this->player2;
+	case 3:
+		return this->player3;
+	case 4:
+		return this->player4;
+	}
+	return nullptr;
+}
+
+bool GameScene::isStartGame()
+{
+	if (getPlayer(NetWorkManage::getInstance()->playerID)->bStartGame)
+	{
+		bStartGame = true;
+		return true;
+	}
+	return false;
+
 }

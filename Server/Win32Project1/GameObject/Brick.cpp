@@ -1,45 +1,58 @@
+#include "../Server.h"
 #include "Brick.h"
+#include "../GameLog/GameLog.h"
 
 void Brick::Initialize()
 {
-	Sprite* brick = new Sprite();
+	id = eID::ID_Brick;
+	brick = new Sprite();
 	brick->Initialize();
 	brick->SetAnimation(Tile_Brick1);
-
-	AddBrick(0, 0);
-
-	SetPosition(100, 100);
+	Object::Initialize();
 }
 
 void Brick::AddBrick(int x, int y)
 {
+	D3DXVECTOR2 temp;
 	//Top - Left
 	BrickSprite* brickSprite1 = new BrickSprite();
-	brickSprite1->sprite.Initialize();
-	brickSprite1->sprite.SetAnimation(Tile_Brick1);
+	brickSprite1->sprite = *brick;
 	brickSprite1->position.x = x  * 2;
 	brickSprite1->position.y = y  * 2;
+	temp.x = brickSprite1->position.x * 8 + GetPosition().x + 8;
+	temp.y = brickSprite1->position.y * 8 + GetPosition().y + 8;
+	boxTL = new Box2D(temp, 8, 8, this);
+	brickSprite1->box = boxTL;
 
 	//Top - Right
 	BrickSprite* brickSprite2 = new BrickSprite();
-	brickSprite2->sprite.Initialize();
-	brickSprite2->sprite.SetAnimation(Tile_Brick1);
+	brickSprite2->sprite = *brick;
 	brickSprite2->position.x = x * 2 + 1;
 	brickSprite2->position.y = y * 2;
+	temp.x = brickSprite2->position.x * 8 + GetPosition().x + 8;
+	temp.y = brickSprite2->position.y * 8 + GetPosition().y + 8;
+	boxTR = new Box2D(temp, 8, 8, this);
+	brickSprite2->box = boxTR;
 
 	//Bottom - Left
 	BrickSprite* brickSprite3 = new BrickSprite();
-	brickSprite3->sprite.Initialize();
-	brickSprite3->sprite.SetAnimation(Tile_Brick1);
+	brickSprite3->sprite = *brick;
 	brickSprite3->position.x = x * 2;
 	brickSprite3->position.y = y * 2 + 1;
+	temp.x = brickSprite3->position.x * 8 + GetPosition().x + 8;
+	temp.y = brickSprite3->position.y * 8 + GetPosition().y + 8;
+	boxBL = new Box2D(temp, 8, 8, this);
+	brickSprite3->box = boxBL;
 
 	//Bottom - Right
 	BrickSprite* brickSprite4 = new BrickSprite();
-	brickSprite4->sprite.Initialize();
-	brickSprite4->sprite.SetAnimation(Tile_Brick1);
+	brickSprite4->sprite = *brick;
 	brickSprite4->position.x = x * 2 + 1;
 	brickSprite4->position.y = y * 2 + 1;
+	temp.x = brickSprite4->position.x * 8 + GetPosition().x + 8;
+	temp.y = brickSprite4->position.y * 8 + GetPosition().y + 8;
+	boxBR = new Box2D(temp, 8, 8, this);
+	brickSprite4->box = boxBR;
 
 	sprites.push_back(*brickSprite1);
 	sprites.push_back(*brickSprite2);
@@ -51,6 +64,36 @@ void Brick::Draw()
 {
 	for (vector<BrickSprite>::iterator it = sprites.begin(); it != sprites.end(); ++it)
 	{
+		if ((*it).disable)
+			continue;
 		(*it).sprite.Render((*it).GetPosition().x * 8 + GetPosition().x + 4, (*it).GetPosition().y * 8 + GetPosition().y + 4);
 	}
+}
+
+void Brick::onCollision(Object* object)
+{
+	std::vector<BrickSprite>::iterator tt;
+	if (object->GetID() == eID::ID_Bullet)
+	{
+		for (std::vector<BrickSprite>::iterator it = sprites.begin(); it != sprites.end(); it++)
+		{
+			if ((*it).box->getShot && !(*it).box->disable)
+			{
+				(*it).disable = true;
+				(*it).box->disable = true;
+
+				Server::getInstance()->CreateEventData((*it).GetPosition(), eObjectId::BrickID, this->getInGameID(), funcId::Pl_Disable, sizeof(D3DXVECTOR2));
+
+				/*GAMELOG("x:%f		y:%f", (*it).GetPosition().x, (*it).GetPosition().y);
+				Server::getInstance()->kobiksendchua = true;*/
+
+				break;
+			}
+		}
+	}
+}
+
+void Brick::destroy()
+{
+	deleted = true;
 }

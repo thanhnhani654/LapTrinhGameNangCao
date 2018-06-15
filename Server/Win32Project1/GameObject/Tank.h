@@ -4,6 +4,7 @@
 #include "../Behavior/Movement.h"
 #include "Bulllet.h"
 #include <vector>
+#include "../Collision/Box2D.h"
 
 enum eTankType
 {
@@ -51,24 +52,30 @@ class Tank : public Object
 protected:
 	eTankType	type;
 	eTankState	state;
-	Movement	movement;
-	vector <Bullet> bullets;
+	Movement*	movement;
+	vector <Bullet*> bullets;
 	int maxBullet;
+
+	Box2D* boxCollider;
 
 	int test;
 
 public:
+	bool disable;
 	Sprite sprites;
 	Tank();
 	void Initialize();
 	void Initialize(eTankType itype);
+	void UpdateInput(float deltatime);
 	void Update(float deltatime);
 	void Draw();
+	void onCollision(Object* object);
 	void Animator();
 
 	void SetType(eTankType itype);
-	Movement GetMovement();
+	Movement* GetMovement();
 
 	void Fire();
 	
+	void destroy();
 };

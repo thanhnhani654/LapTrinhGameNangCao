@@ -37,30 +37,61 @@ bool Game::GameInit(HWND hwnd)
 	//////////////////////////////////////////////////////////////////////////
 	////////////////Initialize		Game		Elementals////////////////////
 	//////////////////////////////////////////////////////////////////////////
+	
 	sprites.GetDevice(d3ddv);
-	gameScene.Init();
 	updater = new Updater(&gameScene);
+	gameScene.Init();
+
+	Updater::getInstance()->updateID();
+	
 
 	return true;
 }
 
 bool Game::GameRun(float deltatime)
 {
+	debugDraw = false;
+	//debugDraw = true;
+
 	d3ddv->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 	
 	//Update Keyboard and Mouse First
-	gameScene.UpdateInput();
+	//if (isUpdateInput)
+	if (Updater::getInstance()->bUpdateGame)
+	{
+		NetWorkManage::getInstance()->getStartUpdatetime();
+		gameScene.UpdateInput(deltatime);
+	}
 
+	//Collision
+	
+	CollisionManager::getInstance()->doCollision(deltatime);
+	
 	//Update all other stat 
-	gameScene.Update(deltatime);
+	locker->lock();
+	
+	if (Updater::getInstance()->bUpdateGame)
+		gameScene.Update(deltatime);
+	//Updater::getInstance()->ChecknUpdate();
+	Updater::getInstance()->isUpdateGame(deltatime);
+	Updater::getInstance()->ChecknUpdate();
+	locker->unlock();
+	
 
+	
 	if (d3ddv->BeginScene())
 	{
-
 		d3ddv->ColorFill(surface, NULL, D3DCOLOR_XRGB(255, 0, 0));
+
 		
 		//Draw game
 		gameScene.Draw();
+
+		LoadingScreen::getInstance()->DrawRect(d3ddv, back_buffer, surface);
+		LoadingScreen::getInstance()->DrawEndGameScreen(d3ddv, back_buffer, surface);
+
+		if (debugDraw)
+			Box2D::debugDraw(d3ddv);
 
 		d3ddv->EndScene();
 	}
@@ -77,4 +108,9 @@ bool Game::GameRelease()
 	if (d3d != NULL)
 		d3d->Release();
 	return true;
+}
+
+void Game::getLocker(std::mutex* locker)
+{
+	this->locker = locker;
 }

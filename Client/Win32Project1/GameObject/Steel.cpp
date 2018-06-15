@@ -2,42 +2,39 @@
 
 void Steel::Initialize()
 {
-	Sprite* steel = new Sprite();
-	steel->Initialize();
-	steel->SetAnimation(Tile_Steel);
+	id = eID::ID_Steel;
+	steelSprite.Initialize();
+	steelSprite.SetAnimation(Tile_Steel);
 
 	AddSteel(0, 0);
 
 	SetPosition(100, 100);
+	Object::Initialize();
 }
 
 void Steel::AddSteel(int x, int y)
 {
 	//Top - Left
 	BrickSprite* steelSprite1 = new BrickSprite();
-	steelSprite1->sprite.Initialize();
-	steelSprite1->sprite.SetAnimation(Tile_Steel);
+	steelSprite1->sprite = steelSprite;
 	steelSprite1->position.x = x * 2;
 	steelSprite1->position.y = y * 2;
 
 	//Top - Right
 	BrickSprite* steelSprite2 = new BrickSprite();
-	steelSprite2->sprite.Initialize();
-	steelSprite2->sprite.SetAnimation(Tile_Steel);
+	steelSprite2->sprite = steelSprite;
 	steelSprite2->position.x = x * 2 + 1;
 	steelSprite2->position.y = y * 2;
 
 	//Bottom - Left
 	BrickSprite* steelSprite3 = new BrickSprite();
-	steelSprite3->sprite.Initialize();
-	steelSprite3->sprite.SetAnimation(Tile_Steel);
+	steelSprite3->sprite = steelSprite;
 	steelSprite3->position.x = x * 2;
 	steelSprite3->position.y = y * 2 + 1;
 
 	//Bottom - Right
 	BrickSprite* steelSprite4 = new BrickSprite();
-	steelSprite4->sprite.Initialize();
-	steelSprite4->sprite.SetAnimation(Tile_Steel);
+	steelSprite4->sprite = steelSprite;
 	steelSprite4->position.x = x * 2 + 1;
 	steelSprite4->position.y = y * 2 + 1;
 
@@ -53,4 +50,14 @@ void Steel::Draw()
 	{
 		(*it).sprite.Render((*it).GetPosition().x * 8 + GetPosition().x + 4, (*it).GetPosition().y * 8 + GetPosition().y + 4);
 	}
+}
+
+void Steel::onCollision(Object* object)
+{
+
+}
+
+void Steel::destroy()
+{
+	deleted = true;
 }

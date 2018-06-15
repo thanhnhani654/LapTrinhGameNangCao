@@ -1,3 +1,4 @@
+
 enum AnimationName
 {
 	Tank_Yellow_1_Up,
@@ -163,3 +164,4 @@ enum AnimationName
 	effect_imortal2,
 
 };
+

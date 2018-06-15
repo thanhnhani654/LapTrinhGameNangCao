@@ -5,6 +5,9 @@
 #include "GameScene.h"
 #include "Sprite.h"
 #include "Client\Updater.h"
+#include <mutex>
+#include "Collision\CollisionManager.h"
+#include "LoadingScreen.h"
 
 class  Game
 {
@@ -23,8 +26,12 @@ public:
 	bool GameInit(HWND hwnd);
 	bool GameRun(float deltatime);
 	bool GameRelease();
+	bool debugDraw;
 
 	static Sprite sprites;
+	std::mutex* locker;
+
+	void getLocker(std::mutex* locker);
 
 };
 

@@ -8,7 +8,10 @@ Memento::Memento(SnapShoot isnapShoot)
 
 SnapShoot* Memento::getSnapShoot()
 {
-	
-
 	return snapShoot;
+}
+
+void Memento::deleteSnapShoot()
+{
+	delete snapShoot;
 }

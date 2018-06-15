@@ -24,26 +24,32 @@ protected:
 
 	edirection direction;
 	edirection previousDirection;
-
-	float virtualX;
-	float virtualY;
+	edirection previousDirectionNotNIL;
 
 	float speed;
 
 	Object* tank;
 public:
 	void Initialize(D3DXVECTOR2* ipos, Object* tank);
+	//void Initialize(D3DXVECTOR2& ipos, Object* tank);
 
-	void Move(edirection idirection);
+	D3DXVECTOR2 Move(edirection idirection, float deltatime);
+	void projectTileMove(edirection idirection, float deltatime);
 
 	D3DXVECTOR2 GetVelocity();
+	D3DXVECTOR2* GetPtrVelocity();
 
 	void SetSpeed(float speed);
 
 	float GetSpeed();
+	float* GetPtrSpeed();
 
 	edirection GetDirection();
+	edirection GetPreviousDirection();
+	edirection GetPreviousDirectionNotNIL();
 
 	void setPosition(D3DXVECTOR2 pos);
 	D3DXVECTOR2 getPosition();
+
+	float Round8(float number);
 };

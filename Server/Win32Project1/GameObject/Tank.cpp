@@ -5,65 +5,63 @@ Tank::Tank()
 
 void Tank::Initialize()
 {
+	id = eID::ID_Tank;
 	sprites.Initialize();
-	//movement = new Movement();
+	movement = new Movement();
 	
-	movement.Initialize(&position, this);
-	movement.SetSpeed(1.0f);
+	movement->Initialize(&position, this);
+	movement->SetSpeed(90.0f);
 	state = normal;
 	maxBullet = 1;
 	test = 0;
+	boxCollider = new Box2D(&position, movement->GetPtrVelocity(), 14.0f, 14.0f, movement->GetPtrSpeed(), this);
+	Object::Initialize();
+	disable = false;
 }
 
 void Tank::Initialize(eTankType itype)
 {
+	id = eID::ID_Tank;
 	sprites.Initialize();
 	type = itype;
-	//movement = new Movement();
-	movement.Initialize(&position, this);
-	movement.SetSpeed(1.0f);
+	movement = new Movement();
+	movement->Initialize(&position, this);
+	movement->SetSpeed(90.0f);
 	state = normal;
-	maxBullet = 100;
+	maxBullet = 1;
 	test = 0;
+	boxCollider = new Box2D(&position, movement->GetPtrVelocity(), 14.0f, 14.0f, movement->GetPtrSpeed(), this);
+	Object::Initialize();
+	disable = false;
+}
+
+void Tank::UpdateInput(float deltatime)
+{
+	boxCollider->rePointPosition(&position);
 }
 
 void Tank::Update(float deltatime)
 {
 	Animator();
-	/*static int test2 = 600;
-	static int i = 0;
-	if (test == 0)
-	{
-		State state;
-		state.x = position.x;
-		state.y = position.y;
 
-		pOriginator->setState(state);
-		pTaker->addMemento(pOriginator->createMemento());
+	SetPrevPosition();
+
+	position.x += movement->GetVelocity().x * deltatime / 1000;
+	position.y += movement->GetVelocity().y * deltatime / 1000;
+
+	bool destroyBullet = false;
+
+	for (vector<Bullet*>::iterator it = bullets.begin(); it != bullets.end(); ++it)
+	{
+		(*it)->Update(deltatime);
+		if ((*it)->isDestroyed())
+			destroyBullet = true;
 	}
 
-	if (test == test2)
+	if (destroyBullet)
 	{
-		test2 += 600;
-		State state;
-		state.x = position.x;
-		state.y = position.y;
-
-		pOriginator->setState(state);
-		pTaker->addMemento(pOriginator->createMemento());
-
-		pOriginator->restoreMemento(pTaker->getMemento(i));
-		i++;
-		position.x = pOriginator->getState().x;
-		position.y = pOriginator->getState().y;
-	}*/
-
-	for (vector<Bullet>::iterator it = bullets.begin(); it != bullets.end(); ++it)
-	{
-		(*it).Update(deltatime);
+		bullets.erase(bullets.begin());
 	}
-	//test++;
-
 }
 
 void Tank::Draw()
@@ -71,9 +69,17 @@ void Tank::Draw()
 	sprites.Render(position.x, position.y);
 	sprites.Next();
 
-	for (vector<Bullet>::iterator it = bullets.begin(); it != bullets.end(); ++it)
+	for (vector<Bullet*>::iterator it = bullets.begin(); it != bullets.end(); ++it)
 	{
-		(*it).Draw();
+		(*it)->Draw();
+	}
+}
+
+void Tank::onCollision(Object* object)
+{
+	if (object->GetID() == eID::ID_Bullet || object->GetID() == eID::ID_Tank)
+	{
+		this->disable = true;
 	}
 }
 
@@ -81,7 +87,7 @@ void Tank::SetType(eTankType itype)
 {
 	type = itype;
 	if (state == normal);
-	switch (movement.GetDirection())
+	switch (movement->GetDirection())
 	{
 	case UP:
 		sprites.SetAnimation(type * 4);
@@ -98,7 +104,7 @@ void Tank::SetType(eTankType itype)
 	}
 }
 
-Movement Tank::GetMovement()
+Movement* Tank::GetMovement()
 {
 	return movement;
 }
@@ -109,13 +115,13 @@ void Tank::Animator()
 	{
 	case normal:
 		//Movement Animation
-		if (movement.GetVelocity().y > 0)
+		if (movement->GetVelocity().y > 0)
 			sprites.SetAnimation(type * 4);
-		else if (movement.GetVelocity().x < 0)
+		else if (movement->GetVelocity().x < 0)
 			sprites.SetAnimation(type * 4 + 1);
-		else if (movement.GetVelocity().y < 0)
+		else if (movement->GetVelocity().y < 0)
 			sprites.SetAnimation(type * 4 + 2);
-		else if (movement.GetVelocity().x > 0)
+		else if (movement->GetVelocity().x > 0)
 			sprites.SetAnimation(type * 4 + 3);
 		break;
 	default:
@@ -128,8 +134,16 @@ void Tank::Fire()
 	if (bullets.size() >= maxBullet)
 		return;
 
-	Bullet bullet;// = new Bullet();
-	bullet.Initialize(position, movement.GetDirection());
+	Bullet* bullet = new Bullet();// = new Bullet();
+	if (movement->GetDirection() == edirection::NIL)
+		bullet->Initialize(position, movement->GetPreviousDirectionNotNIL(), inGameID);
+	else	
+		bullet->Initialize(position, movement->GetDirection(), inGameID);
 
 	bullets.push_back(bullet);
+}
+
+void Tank::destroy()
+{
+	deleted = true;
 }

@@ -52,14 +52,21 @@ protected:
 	eTankType	type;
 	eTankState	state;
 	Movement	*movement;
-	vector <Bullet> bullets;
+	
 	int maxBullet;
-
+	Box2D* boxCollider;
+	
 public:
+	vector <Bullet*> bullets;
+	bool bCanFire;
+	bool fired;
+	bool disable;
+	float cooldown;
 	Sprite sprites;
 	Tank();
 	void Initialize();
 	void Initialize(eTankType itype);
+	void UpdateInput(float deltatime);
 	void Update(float deltatime);
 	void Draw();
 	void Animator();
@@ -67,6 +74,13 @@ public:
 	void SetType(eTankType itype);
 	Movement* GetMovement();
 
-	void Fire();
+	bool Fire();
+	void bulletPrediction(float ping);
 	
+	void destroy();
+	void onCollision(Object* object);
+	void tankDisable();
+	void tankDied();
+	bool died;
+	bool alreadyDie;
 };

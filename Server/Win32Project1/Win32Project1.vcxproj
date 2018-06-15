@@ -152,12 +152,15 @@
     <ClCompile Include="Behavior\Movement.cpp" />
     <ClCompile Include="Client\Client.cpp" />
     <ClCompile Include="Client\Timer.cpp" />
+    <ClCompile Include="Collision\Box2D.cpp" />
+    <ClCompile Include="Collision\CollisionManager.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameLog\GameLog.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameObject\Brick.cpp" />
     <ClCompile Include="GameObject\Bullet.cpp" />
+    <ClCompile Include="GameObject\MapBounding.cpp" />
     <ClCompile Include="GameObject\Steel.cpp" />
     <ClCompile Include="GameObject\Tank.cpp" />
     <ClCompile Include="GameScene.cpp" />
@@ -174,6 +177,8 @@
     <ClInclude Include="Behavior\Movement.h" />
     <ClInclude Include="Client\Client.h" />
     <ClInclude Include="Client\Timer.h" />
+    <ClInclude Include="Collision\Box2D.h" />
+    <ClInclude Include="Collision\CollisionManager.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="Game.h" />
@@ -181,6 +186,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObject\Brick.h" />
     <ClInclude Include="GameObject\Bulllet.h" />
+    <ClInclude Include="GameObject\MapBounding.h" />
     <ClInclude Include="GameObject\Steel.h" />
     <ClInclude Include="GameObject\Tank.h" />
     <ClInclude Include="GameScene.h" />

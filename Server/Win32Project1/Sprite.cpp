@@ -66,7 +66,7 @@ void Sprite::Render(float X, float Y)
 	mt._11 = 1.0f;
 	mt._22 = -1.0f;
 	mt._41 = 8;
-	mt._42 = 225;
+	mt._42 = 224;
 	D3DXVECTOR4 vp_pos;
 
 	D3DXVec3Transform(&vp_pos, &position, &mt);

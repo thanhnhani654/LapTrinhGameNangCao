@@ -43,6 +43,12 @@
     <Filter Include="GameLog">
       <UniqueIdentifier>{2b495c2a-322c-4ad3-93ff-71a195c92a25}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Collision">
+      <UniqueIdentifier>{adc82cae-3368-45fa-af39-d1c96471f4e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Collision">
+      <UniqueIdentifier>{48fcfc89-66db-4544-a97c-1ecef35fd08f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -104,6 +110,15 @@
     </ClCompile>
     <ClCompile Include="Client\Client.cpp">
       <Filter>Source Files\ClientFol</Filter>
+    </ClCompile>
+    <ClCompile Include="Collision\Box2D.cpp">
+      <Filter>Source Files\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Collision\CollisionManager.cpp">
+      <Filter>Source Files\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject\MapBounding.cpp">
+      <Filter>Source Files\GameObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -169,6 +184,15 @@
     </ClInclude>
     <ClInclude Include="Client\Client.h">
       <Filter>Header Files\ClientFol</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision\Box2D.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision\CollisionManager.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject\MapBounding.h">
+      <Filter>Header Files\GameObject</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

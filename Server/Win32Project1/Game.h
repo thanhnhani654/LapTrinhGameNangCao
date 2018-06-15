@@ -1,5 +1,4 @@
 #pragma once
-//#include "Client\Client.h"
 #include "Server.h"
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -7,7 +6,9 @@
 #include "Sprite.h"
 #include "RollbackSys\CareTaker.h"
 #include "Client\Timer.h"
-
+#include <mutex>
+#include "Collision\Box2D.h"
+#include "Collision\CollisionManager.h"
 
 class  Game
 {
@@ -20,6 +21,7 @@ private:
 	Originator orig;
 	CareTaker caretaker;
 	Timer time;
+	std::mutex* locker;
 
 public:
 	GameScene gameScene;
@@ -29,6 +31,9 @@ public:
 	bool GameRelease();
 
 	static Sprite sprites;
+	void getLocker(std::mutex *locker);
+
+	bool debugDraw;
 
 };
 

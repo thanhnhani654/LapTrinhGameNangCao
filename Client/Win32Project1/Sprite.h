@@ -23,11 +23,11 @@ struct SpritePos
 class Sprite
 {
 protected:
-	LPDIRECT3DTEXTURE9 _Image;
-	LPD3DXSPRITE _SpriteHandler;
+	static LPDIRECT3DTEXTURE9 _Image;
+	static LPD3DXSPRITE _SpriteHandler;
 	static LPDIRECT3DDEVICE9 d3ddv;
 
-	void LoadSprite(LPCWSTR Path, int Width, int Height);
+	
 
 	int index;
 	int begin;
@@ -38,7 +38,7 @@ protected:
 	
 public:
 	Sprite() {}
-
+	void LoadSprite(LPCWSTR Path, int Width, int Height);
 	void GetDevice(LPDIRECT3DDEVICE9 d3ddv);
 
 	void Initialize();

@@ -40,6 +40,12 @@
     <Filter Include="GameLog">
       <UniqueIdentifier>{912608ca-6a47-4c3d-b39a-4bedf7cae6ab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Collision">
+      <UniqueIdentifier>{059d6fdd-d3b9-43c5-8b02-338e1e3df27d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Collision">
+      <UniqueIdentifier>{3ecca5b8-af35-44ba-a806-993bf56e0f52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -95,6 +101,21 @@
     </ClCompile>
     <ClCompile Include="Client\Updater.cpp">
       <Filter>Source Files\ClientFol</Filter>
+    </ClCompile>
+    <ClCompile Include="Collision\Box2D.cpp">
+      <Filter>Source Files\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Collision\CollisionManager.cpp">
+      <Filter>Source Files\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject\MapBounding.cpp">
+      <Filter>Source Files\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadingScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Behavior\TankAI.cpp">
+      <Filter>Source Files\Behavior</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +175,21 @@
     </ClInclude>
     <ClInclude Include="Client\Updater.h">
       <Filter>Header Files\ClientFol</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision\Box2D.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision\CollisionManager.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject\MapBounding.h">
+      <Filter>Header Files\GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadingScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Behavior\TankAI.h">
+      <Filter>Header Files\Behavior</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

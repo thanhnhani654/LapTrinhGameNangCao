@@ -5,6 +5,17 @@ SOCKET NetWorkManage::sClient;
 Timer NetWorkManage::localTime;
 NetWorkManage* NetWorkManage::inst;
 
+NetWorkManage::NetWorkManage()
+{
+	tempDataPack = nullptr;
+	DataPack = nullptr;
+	setUpCompleted = false;
+	bsyncTimed = false;
+	deltaclock = 0;
+	brequestSyncTime = false;
+	disconected = false;
+}
+
 NetWorkManage* NetWorkManage::getInstance()
 {
 	if (inst == nullptr)
@@ -20,7 +31,8 @@ void NetWorkManage::Initialize()
 	localTime.getCurrentTime();
 }
 
-///////////////////////////////////////////////////////////
+#pragma region First establish
+
 BOOL NetWorkManage::cClientStartUp()
 {
 	if ((WSAStartup(MAKEWORD(2, 2), &wsd)) != 0)
@@ -71,6 +83,19 @@ BOOL NetWorkManage::cCreateSocket()
 	}
 }
 
+void NetWorkManage::nonBlock()
+{
+	nonBlocking = 1;
+	if (ioctlsocket(sClient, FIONBIO, &nonBlocking) == SOCKET_ERROR)
+	{
+		printf("ioctlsocket() failed with error %d\n", WSAGetLastError());
+		MessageBox(NULL, L"NonBlock failed!", L"ERROR", NULL);
+		return;
+	}
+	else
+		printf("ioctlsocket() is OK!\n");
+}
+
 BOOL NetWorkManage::cConnect()
 {
 	if (connect(sClient, (struct sockaddr *)&server, sizeof(server)) == SOCKET_ERROR)
@@ -107,137 +132,223 @@ BOOL NetWorkManage::cClose()
 	return TRUE;
 }
 
-///////////////////////////////////////////////////////////
+#pragma endregion
 
-BOOL NetWorkManage::cSend()
+BOOL NetWorkManage::CreateEventData(void* data,eObjectId objectid, uint8_t ingameID, funcId FuncID, uint32_t datasize)
 {
-	/*strcpy_s(szzMessage, sizeof(szzMessage), DEFAULT_MESSAGE);
+	char* dataconvert = new char(sizeof(uint8_t));
 
-	result = send(sClient, szzMessage, strlen(szzMessage), 0);
+	//[start flag][UpdateTime][ObjectID][InGameID][FuncID][data]...[end flag][start flag]...[end flag]....
+	//      2b        4b          1b(4b)     1b     1b(4b)   nb         2b         2b            2b
 
-	if (result == 0)
-		return TRUE;
-	else if (result == SOCKET_ERROR)
-	{
-		printf("send() failed with error code %d\n", WSAGetLastError());
-		return FALSE;
-	}
-	printf("send() should be fine. Send %d bytes\n", result);
-*/
-	return TRUE;
-}
-
-BOOL NetWorkManage::CreateEventData(void* data,eObjectId objectid, funcId FuncID, uint32_t datasize)
-{
-	char* dataconvert = new char(sizeof(uint32_t));
-
-	//[start flag][UpdateTime][ObjectID][FuncID][data]...[end flag][start flag]...[end flag]....
-	//      2b        4b          1b(4b) 1b(4b)   nb         2b         2b            2b
-
+	//GameObject ID
 	(*dataconvert) = static_cast<char>(objectid);
-	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint32_t));
-	tempDataPack->len += sizeof(uint32_t);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint8_t));
+	tempDataPack->len += sizeof(uint8_t);
 	
+	(*dataconvert) = static_cast<char>(ingameID);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint8_t));
+	tempDataPack->len += sizeof(uint8_t);
+	
+	//FuncID
 	(*dataconvert) = static_cast<char>(FuncID);
-	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint32_t));
-	tempDataPack->len += sizeof(uint32_t);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, sizeof(uint8_t));
+	tempDataPack->len += sizeof(uint8_t);
 
+
+	//Data
 	dataconvert = new char(datasize);
 	dataconvert = reinterpret_cast<char*>(data);
 	memcpy(tempDataPack->Buffer + tempDataPack->len, dataconvert, datasize);
 	tempDataPack->len += datasize;
-	/*count++;
-	if (count > 90)
-	{
-		MessageBox(NULL, TEXT("Count > 90"), TEXT("ERROR"), NULL);
-	}*/
-	
-	//tempDataPack->count++;
-	return TRUE;
-}
 
-BOOL NetWorkManage::WrapToSend()
-{
-	delete[] tempDataPack;
-	tempDataPack = NULL;
+	tempDataPack->count++;
+
 	return TRUE;
 }
 
 BOOL NetWorkManage::SendData()
 {
-	if (DataPack->Buffer == NULL)
+	int a = 0;
+	//DataPack khong co du lieu thi khong can gui
+	if (DataPack->Buffer == nullptr || DataPack->len == 0)
 		return FALSE;
-	send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
-	delete DataPack;
-	DataPack = new DataInfomation(2);
+	//DataPack co du lieu sai format thi khong can gui
+	if (DataPack->Buffer[0] != 's' || DataPack->Buffer[1] != 'p')
+	{
+		
+		GAMELOG("Wrong Format Data!!				Call From:: NetWorkManage::SendData");
+		return FALSE;
+	}
+
+	//SEND
+	int ret = 1;
+	ret = send(sClient, DataPack->Buffer, DEFAULT_BUFFER, 0);
+	if (ret == SOCKET_ERROR)
+	{
+		GAMELOG("Send Error!");
+		return FALSE;
+	}
+	else if (ret == 0)
+	{
+		GAMELOG("Send NULL!");
+		return FALSE;
+	}
+	bSend = false;
+
+	//Debug
+	static int count = 0;
+	count++;
+	//GAMELOG("SEND SUCCESSFUL!!!   times: %d				Call From: NetWorkManage::SendData()", count);
+	//////////////////////////////////////////////////////////
+	//delete DataPack;
+	//DataPack = nullptr;
+	DataPack->reset();
+	memset(DataPack->Buffer, 0, DEFAULT_BUFFER);
+
 	return TRUE;
 }
 
 BOOL NetWorkManage::cRecv()
 {
-	ret = recv(sClient, szBuffer, 8192, 0);
-	
+	ret = recv(sClient, szBuffer, 2000, 0);
+	//getRTT();
+	if (szBuffer[0] == 't')
+		return FALSE;
 	if (ret == 0)        // Graceful close
 	{
 		printf("It is a graceful close!\n");
-		MessageBox(NULL, L"recv() 0", L"ERROR", NULL);
+		//MessageBox(NULL, L"recv() 0", L"ERROR", NULL);
+		GAMELOG("recv() 0");
 		return FALSE;
 	}
 	else if (ret == SOCKET_ERROR)
 	{
 		printf("recv() failed with error code %d\n", WSAGetLastError());
-		MessageBox(NULL, L"recv() ERRROR", L"ERROR", NULL);
+		//MessageBox(NULL, L"recv() ERRROR", L"ERROR", NULL);
+		GAMELOG("recv() failed with error code %d\n", WSAGetLastError());
 		return FALSE;
 	}	
-
-
+	//Debug
+	static int count = 0; 
+	count++;
+	//GAMELOG("RECV SUCCESSFUL!!!			times: %d", count);
+	////////////////////////////////////////////////////////
 	return TRUE;
 }
 
 BOOL NetWorkManage::getStartUpdatetime()
 {
+	//Tao nhung thong tin ban dau cho mot pack update gom: flag, UpdateTime
+	int a = 0;
 	localTime.getCurrentTime();
 
-	if (tempDataPack == NULL)
+	if (tempDataPack == nullptr || tempDataPack == NULL)
 	{
 		tempDataPack = new DataInfomation(2);
+	}
+
+	//Neu khong co su kien can update thi khong can gui
+	//std::cout << "asdas";
+	if (tempDataPack->count == 0)
+	{
+		tempDataPack->len = 0;
+		/*delete tempDataPack;
+		tempDataPack = new DataInfomation(2);*/
+	}
+
+	if (DataPack == nullptr)
+	{
+		DataPack = new DataInfomation(2);
 	}
 
 	char* flag = new char(2);
 
-	//EndPack Flag
+	//EndPack Flag. Tao EngPack Flag cho pack Update truoc.
 	if (tempDataPack->len != 0)
 	{
 		flag = "ep";		//End Pack
-		int a = tempDataPack->len;
 		memcpy(tempDataPack->Buffer + tempDataPack->len, flag, 2);
 		tempDataPack->len += 2;
-		
+
+		if (DataPack->len > 600)
+			GAMELOG("OVERFLOW!!			CALL FROM: NetWorkManage::getStartUpdateTime");
+
 		memcpy(DataPack->Buffer + DataPack->len, tempDataPack->Buffer, tempDataPack->len);
 		DataPack->len += tempDataPack->len;
-		delete[] tempDataPack;
-		tempDataPack = new DataInfomation(2);
+		/*delete tempDataPack;
+		tempDataPack = nullptr;
+		tempDataPack = new DataInfomation(2);*/
+		tempDataPack->reset();
 	}
 
 	//StartPack Flag
 	flag = "sp";			//Start Pack
-	memcpy(tempDataPack + tempDataPack->len, flag, 2);
+	memcpy(tempDataPack->Buffer + tempDataPack->len, flag, 2);
 	tempDataPack->len += 2;
 
 	//set Time Update
 	char* dataConverter = new char[sizeof(float)];
-	float militime = localTime.getmilitime();
+	float militime = localTime.getmilitime() + deltaclock;
 	dataConverter = reinterpret_cast<char*>(&militime);
 
 	memcpy(tempDataPack->Buffer + tempDataPack->len, dataConverter, sizeof(float));
 	tempDataPack->len += sizeof(float);
-	
-	static int coun = 0;
-	if (coun == 60)
-		int h = 0;
-	coun++;
 
-	//delete[] dataConverter;
 	return TRUE;
 }
 
+void NetWorkManage::requestSyncTime()
+{
+	if (brequestSyncTime)
+		return;
+	localTime.getCurrentTime();
+	TimeA = localTime.getmilitime();
+	char tsync[] = "step";
+	send(sClient, tsync, 4, 0);
+	brequestSyncTime = true;
+}
+
+void NetWorkManage::SyncTime(int i)
+{
+	//Khong biet comment the nao nen ghi do cong thuc SyncTime
+	// TimeA(Client): thoi gian luc Client gui goi tin yeu cau dong bo hoa thoi gian
+	// TimeB(Server): thoi gian luc Server nhan goi tin yeu cau dong bo hoa thoi gian
+	// TimeC(Client): thoi gian luc Client nhan goi tin phan hoi chua thoi gian cua Server luc Server nhan goi tin yeu cau dong bo hoa cua Clien =))
+	// 1/2 Thoi gian tren duong truyen: (TimeC - TimeA)/2
+	// Thoi gian hien tai o Server: ((TimeC - TimeA)/2 + TimeB)
+	// ClockDelta = ((TimeC - TimeA)/2 + TimeB) - TimeC
+	// ClientTime = time.getCurrentTime + ClockDelta
+
+	if (!brequestSyncTime)
+		return;
+
+	localTime.getCurrentTime();
+	float TimeC = localTime.getmilitime();
+
+	char* cTimeB = new char[4];
+	memcpy(cTimeB, szBuffer + 2 + i, 4);
+	float* TimeB = reinterpret_cast<float*>(cTimeB);
+
+	ping = (TimeC - TimeA) / 2;
+	deltaclock = ((TimeC - TimeA) / 2 + *TimeB) - TimeC;// +50000;
+	bsyncTimed = true;
+	delete[] cTimeB;
+
+	static bool once = false;
+	if (!once)
+	{
+		GAMELOG("Sync Time Success!!");
+		once = true;
+	}
+
+	GAMELOG("PING %f", ping);
+
+
+	brequestSyncTime = false;
+}
+
+void NetWorkManage::getRtt()
+{
+	RTT = ping * 2;
+}

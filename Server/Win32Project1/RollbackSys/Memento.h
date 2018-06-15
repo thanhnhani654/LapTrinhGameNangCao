@@ -9,10 +9,10 @@ struct SnapShoot
 
 class Memento
 {
-
-public:
-	//Chua viet phuong thuc xoa
 	SnapShoot* snapShoot;
+public:
+	
 	Memento(SnapShoot snapShoot);
 	SnapShoot* getSnapShoot();
+	void deleteSnapShoot();
 };

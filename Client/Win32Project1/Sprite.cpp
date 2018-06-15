@@ -2,6 +2,8 @@
 
 
 LPDIRECT3DDEVICE9 Sprite::d3ddv;
+LPDIRECT3DTEXTURE9 Sprite::_Image;
+LPD3DXSPRITE Sprite::_SpriteHandler;
 
 vector <SpritePos> Sprite::spritepos;
 
@@ -12,10 +14,12 @@ void Sprite::GetDevice(LPDIRECT3DDEVICE9 id3ddv)
 
 void Sprite::LoadSprite(LPCWSTR Path, int Width, int Height)
 {
+	if (_Image != nullptr && _SpriteHandler != nullptr)
+		return;
 	D3DXIMAGE_INFO info;
 	HRESULT result;
-	_SpriteHandler = NULL;
-	_Image = NULL;
+	/*_SpriteHandler = NULL;
+	_Image = NULL;*/
 
 	result = D3DXCreateSprite(d3ddv, &_SpriteHandler);
 
@@ -66,7 +70,7 @@ void Sprite::Render(float X, float Y)
 	mt._11 = 1.0f;
 	mt._22 = -1.0f;
 	mt._41 = 8;
-	mt._42 = 225;
+	mt._42 = 224;
 	D3DXVECTOR4 vp_pos;
 
 	D3DXVec3Transform(&vp_pos, &position, &mt);
@@ -85,6 +89,7 @@ void Sprite::Render(float X, float Y)
 
 	_SpriteHandler->End();
 }
+
 
 void Sprite::Next()
 {

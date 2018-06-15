@@ -21,10 +21,10 @@ enum ePlayerFlags : uint8_t
 	player4
 };
 
-enum eObjectId : uint32_t
+enum eObjectId : uint8_t
 {
-	SizePack,
-	GameObject
+	PlayerID,
+	BrickID
 };
 
 struct DataInfomation
@@ -32,18 +32,15 @@ struct DataInfomation
 	char Buffer[DEFAULT_BUFFER];
 	int len;
 	int count;
-	DataInfomation(int type)
+	DataInfomation()
 	{
-		switch (type)
-		{
-		case 1:
-			count = 0;
-			len = 5;
-		case 2:
-			count = 0;
-			len = 0;
-		}
-		
+		count = 0;
+		len = 0;
+	}
+	void reset()
+	{
+		count = 0;
+		len = 0;
 	}
 };
 
@@ -59,11 +56,12 @@ enum eClientMode
 	Sending,
 };
 
-enum funcId : uint32_t
+enum funcId : uint8_t
 {
 	Pl_Move_Event,
 	Pl_Fire,
 	Pl_Position,
+	Pl_Disable,
 };
 
 class NetWorkManage
